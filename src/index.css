@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* CareerBoost Pro Design System */
+    --background: 200 12% 97%;
+    --foreground: 207 33% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 207 33% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 207 33% 15%;
+
+    --primary: 220 76% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 220 76% 36%;
+
+    --secondary: 200 12% 95%;
+    --secondary-foreground: 207 33% 15%;
+
+    --muted: 210 14% 89%;
+    --muted-foreground: 210 12% 43%;
+
+    --accent: 220 76% 95%;
+    --accent-foreground: 220 76% 36%;
+
+    --destructive: 4 67% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 150 58% 27%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 24 88% 38%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 220 76% 48%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 207 33% 15%;
+    --sidebar-primary: 220 76% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 76% 95%;
+    --sidebar-accent-foreground: 220 76% 36%;
+    --sidebar-border: 214 20% 92%;
+    --sidebar-ring: 220 76% 48%;
+
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 210 20% 95%;
+
+    --card: 220 20% 12%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 220 20% 12%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 220 76% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 220 76% 45%;
+
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 210 20% 95%;
+
+    --muted: 220 15% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 220 30% 20%;
+    --accent-foreground: 220 76% 70%;
+
+    --destructive: 4 67% 40%;
+    --destructive-foreground: 210 20% 95%;
+
+    --success: 150 50% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 24 80% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 220 76% 55%;
+
+    --sidebar-background: 220 20% 10%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 220 76% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 30% 20%;
+    --sidebar-accent-foreground: 220 76% 70%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 220 76% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(220 90% 60%));
+  }
+}

@@ -166,36 +166,36 @@ export default function BlogPage() {
         ) : articles.length === 0 ? (
           <div className="text-center py-24 text-muted-foreground">{t('blog.noArticles')}</div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article) => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                onClick={() => navigate(`/blog/${article.slug}`)}
-                onEdit={isAdmin ? () => navigate(`/admin/blog/${article.id}`) : undefined}
-                formatDate={formatDate}
-                minutesLabel={t('blog.minutes')}
-              />
-            ))}
-          </div>
-
-          {/* Load More */}
-          {hasMore && (
-            <div className="flex justify-center mt-10">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="gap-2 px-8"
-              >
-                {loadingMore ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
-                {t('blog.loadMore')}
-              </Button>
+          <>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {articles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  onClick={() => navigate(`/blog/${article.slug}`)}
+                  onEdit={isAdmin ? () => navigate(`/admin/blog/${article.id}`) : undefined}
+                  formatDate={formatDate}
+                  minutesLabel={t('blog.minutes')}
+                />
+              ))}
             </div>
-          )}
+
+            {/* Load More */}
+            {hasMore && (
+              <div className="flex justify-center mt-10">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="gap-2 px-8"
+                >
+                  {loadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {t('blog.loadMore')}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

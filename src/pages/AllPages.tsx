@@ -16,10 +16,10 @@ export const HrProfilePage = () => <PlaceholderPage icon={Users} title="HR Exper
 export const HrBookPage = () => <PlaceholderPage icon={Calendar} title="Book Interview" description="Select a time slot and book your session with this HR expert." />;
 export const InterviewsPage = () => <PlaceholderPage icon={Calendar} title="My Interviews" description="View all your past and upcoming interview sessions." />;
 export const InterviewDetailPage = () => <PlaceholderPage icon={Calendar} title="Interview Detail" description="Full details about this interview session." />;
-export const JobsPage = () => <PlaceholderPage icon={Briefcase} title="Job Listings" description="Browse and search active job listings matching your profile." />;
-export const JobDetailPage = () => <PlaceholderPage icon={Briefcase} title="Job Detail" description="Full job description, requirements, and application form." />;
-export const SavedJobsPage = () => <PlaceholderPage icon={Briefcase} title="Saved Jobs" description="Jobs you've saved for later." />;
-export const ApplicationsPage = () => <PlaceholderPage icon={Briefcase} title="My Applications" description="Track all your job applications and their status." />;
+export { default as JobsPage } from './Jobs';
+export { default as JobDetailPage } from './JobDetail';
+export { default as SavedJobsPage } from './SavedJobs';
+export { default as ApplicationsPage } from './Applications';
 export { default as BlogPage } from './Blog';
 export { default as ArticlePage } from './Article';
 export const InboxPage = () => <PlaceholderPage icon={MessageSquare} title="Messages" description="Your conversations with HR experts and recruiters." />;
@@ -39,8 +39,8 @@ export const HrReviewDetailPage = () => <PlaceholderPage icon={ClipboardList} ti
 export const HrAvailabilityPage = () => <PlaceholderPage icon={Calendar} title="Manage Availability" description="Set your weekly availability for interview bookings." />;
 export const HrProfileEditPage = () => <PlaceholderPage icon={Users} title="HR Profile Editor" description="Edit your public profile, specializations, and photo." />;
 export const HrRatingsPage = () => <PlaceholderPage icon={Star} title="My Ratings" description="View all ratings and feedback from your clients." />;
-export const HrJobListingsPage = () => <PlaceholderPage icon={Briefcase} title="My Job Listings" description="Manage job listings you've posted." />;
-export const HrApplicantsPage = () => <PlaceholderPage icon={Users} title="Applicant Pipeline" description="Review applicants for your job listings." />;
+export { default as HrJobListingsPage } from './HrJobListings';
+export { default as HrApplicantsPage } from './HrApplicants';
 
 // Admin pages
 export const AdminDashboard = () => <PlaceholderPage icon={BarChart3} title="Admin Overview" description="Platform revenue, user growth, and AI cost KPIs." />;

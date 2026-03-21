@@ -100,6 +100,7 @@ const App = () => (
                   <Route path="/hr-portal/profile" element={<HrProfileEditPage />} />
                   <Route path="/hr-portal/ratings" element={<HrRatingsPage />} />
                   <Route path="/hr-portal/jobs" element={<HrJobListingsPage />} />
+                  <Route path="/hr-portal/applicants" element={<HrApplicantsPage />} />
                   <Route path="/hr-portal/jobs/:id/applicants" element={<HrApplicantsPage />} />
                 </Route>
               </Route>
@@ -116,6 +117,7 @@ const App = () => (
                   <Route path="/admin/revenue" element={<AdminRevenuePage />} />
                   <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
                   <Route path="/admin/hr-verification" element={<AdminHrVerificationPage />} />
+                  <Route path="/admin/jobs" element={<HrJobListingsPage />} />
                   <Route path="/admin/blog/new" element={<AdminBlogNewPage />} />
                   <Route path="/admin/blog/:id" element={<AdminBlogEditPage />} />
                 </Route>

@@ -3,13 +3,13 @@ import { AiPageWrapper } from '@/components/shared/AiPageWrapper';
 import { FileText, Palette, Brain, Users, Calendar, Briefcase, BookOpen, MessageSquare, Bell, Settings, Shield, Star, ClipboardList, BarChart3, CreditCard, UserCheck, ScrollText } from 'lucide-react';
 
 // JobSeeker pages
-export const ResumesPage = () => <PlaceholderPage icon={FileText} title="My Resumes" description="Create, manage, and track all your professional resumes in one place." />;
+export { default as ResumesPage } from './ResumesPage';
 export const ResumeNewPage = () => <PlaceholderPage icon={FileText} title="Create Resume" description="Start building a new resume with our guided wizard." />;
-export const ResumeEditPage = () => <PlaceholderPage icon={FileText} title="Resume Editor" description="Edit your resume with the 3-panel editor: sections, form, and live preview." />;
+export { default as ResumeEditPage } from './ResumeEditPage';
 export const ResumePreviewPage = () => <PlaceholderPage icon={FileText} title="Resume Preview" description="Full preview of your resume as it will appear to employers." />;
 export const ResumeAnalysisPage = () => <AiPageWrapper><PlaceholderPage icon={Brain} title="AI Analysis Results" description="View AI-powered analysis scores and improvement suggestions." /></AiPageWrapper>;
-export const TemplatesPage = () => <PlaceholderPage icon={Palette} title="Template Marketplace" description="Browse and apply professional resume templates." />;
-export const TemplateDetailPage = () => <PlaceholderPage icon={Palette} title="Template Detail" description="Preview this template and apply it to your resume." />;
+export { default as TemplatesPage } from './TemplatesPage';
+export { default as TemplateDetailPage } from './TemplateDetailPage';
 export const AiAnalysisPage = () => <AiPageWrapper><PlaceholderPage icon={Brain} title="AI Analysis" description="Run AI-powered analysis on your resumes to improve your chances." /></AiPageWrapper>;
 export const HrDirectoryPage = () => <PlaceholderPage icon={Users} title="HR Expert Directory" description="Discover verified HR professionals for resume reviews and coaching." />;
 export const HrProfilePage = () => <PlaceholderPage icon={Users} title="HR Expert Profile" description="View this expert's full profile, ratings, and availability." />;

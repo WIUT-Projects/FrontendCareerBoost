@@ -57,6 +57,7 @@ export function AppSidebar() {
     { title: t('sidebar.myRatings'), url: '/hr-portal/ratings', icon: Star },
     { title: t('sidebar.myProfile'), url: '/hr-portal/profile', icon: Users },
     { title: t('sidebar.jobListings'), url: '/hr-portal/jobs', icon: Briefcase },
+    { title: t('sidebar.applicants'), url: '/hr-portal/applicants', icon: Users },
     { title: t('sidebar.messages'), url: '/messages', icon: MessageSquare },
     { title: t('sidebar.blog'), url: '/blog', icon: BookOpen },
   ];
@@ -71,6 +72,7 @@ export function AppSidebar() {
     { title: t('sidebar.revenue'), url: '/admin/revenue', icon: BarChart3 },
     { title: t('sidebar.auditLog'), url: '/admin/audit-log', icon: ScrollText },
     { title: t('sidebar.hrVerification'), url: '/admin/hr-verification', icon: UserCheck },
+    { title: t('sidebar.jobs'), url: '/admin/jobs', icon: Briefcase },
     { title: t('sidebar.blog'), url: '/admin/blog/new', icon: BookOpen },
   ];
 

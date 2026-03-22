@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -19,16 +18,16 @@ import {
 import { getUsers, updateUserRole, deleteUser } from '@/services/adminService';
 import type { AdminUserDto } from '@/services/adminService';
 
-// Backend Role enum: 1=JobSeeker, 2=HrExpert, 3=Admin
-const ROLE_LABELS: Record<number, string>  = { 1: 'Job Seeker', 2: 'HR Expert', 3: 'Admin' };
-const ROLE_COLORS: Record<number, string>  = {
-  1: 'bg-sky-100 text-sky-700 border-sky-200',
-  2: 'bg-violet-100 text-violet-700 border-violet-200',
-  3: 'bg-rose-100 text-rose-700 border-rose-200',
+// Backend Role enum (camelCase): jobSeeker | hrExpert | admin
+const ROLE_LABELS: Record<string, string>  = { jobSeeker: 'Job Seeker', hrExpert: 'HR Expert', admin: 'Admin' };
+const ROLE_COLORS: Record<string, string>  = {
+  jobSeeker: 'bg-sky-100 text-sky-700 border-sky-200',
+  hrExpert:  'bg-violet-100 text-violet-700 border-violet-200',
+  admin:     'bg-rose-100 text-rose-700 border-rose-200',
 };
-const ROLE_ICONS: Record<number, typeof User> = { 1: User, 2: UserCheck, 3: ShieldCheck };
+const ROLE_ICONS: Record<string, typeof User> = { jobSeeker: User, hrExpert: UserCheck, admin: ShieldCheck };
 
-function RoleBadge({ role }: { role: number }) {
+function RoleBadge({ role }: { role: string }) {
   const Icon = ROLE_ICONS[role] ?? User;
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${ROLE_COLORS[role]}`}>
@@ -45,7 +44,7 @@ export default function AdminUsersPage() {
   const [page, setPage]             = useState(1);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | '1' | '2' | '3'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'jobSeeker' | 'hrExpert' | 'admin'>('all');
   const [updating, setUpdating]     = useState<number | null>(null);
   const PAGE_SIZE = 15;
 
@@ -68,14 +67,14 @@ export default function AdminUsersPage() {
   const filtered = users.filter((u) => {
     const q = search.toLowerCase();
     const matchQ = !q || (u.fullName ?? '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
-    const matchRole = roleFilter === 'all' || String(u.role) === roleFilter;
+    const matchRole = roleFilter === 'all' || u.role === roleFilter;
     return matchQ && matchRole;
   });
 
   const handleRoleChange = async (user: AdminUserDto, newRole: string) => {
     setUpdating(user.id);
     try {
-      const updated = await updateUserRole(user.id, Number(newRole), user.fullName);
+      const updated = await updateUserRole(user.id, newRole, user.fullName);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: updated.role } : u)));
     } catch (e) {
       console.error(e);
@@ -126,9 +125,9 @@ export default function AdminUsersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All roles</SelectItem>
-            <SelectItem value="1">Job Seeker</SelectItem>
-            <SelectItem value="2">HR Expert</SelectItem>
-            <SelectItem value="3">Admin</SelectItem>
+            <SelectItem value="jobSeeker">Job Seeker</SelectItem>
+            <SelectItem value="hrExpert">HR Expert</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -174,7 +173,7 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                   <td className="px-4 py-3">
                     <Select
-                      value={String(user.role)}
+                      value={user.role}
                       onValueChange={(v) => handleRoleChange(user, v)}
                       disabled={updating === user.id}
                     >
@@ -182,9 +181,9 @@ export default function AdminUsersPage() {
                         <RoleBadge role={user.role} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">Job Seeker</SelectItem>
-                        <SelectItem value="2">HR Expert</SelectItem>
-                        <SelectItem value="3">Admin</SelectItem>
+                        <SelectItem value="jobSeeker">Job Seeker</SelectItem>
+                        <SelectItem value="hrExpert">HR Expert</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </td>

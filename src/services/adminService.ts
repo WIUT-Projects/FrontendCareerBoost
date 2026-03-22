@@ -38,7 +38,7 @@ export async function getUsers(pageIndex = 1, pageSize = 20): Promise<PagedUsers
   return res.json();
 }
 
-export async function updateUserRole(id: number, role: number, fullName: string | null): Promise<AdminUserDto> {
+export async function updateUserRole(id: number, role: string, fullName: string | null): Promise<AdminUserDto> {
   const res = await fetch(`${API_URL}/api/users/${id}`, {
     method: 'PUT',
     headers: authHeaders(),

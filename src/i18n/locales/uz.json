@@ -65,7 +65,12 @@
     "iAmA": "Men",
     "jobSeeker": "Ish qidiruvchi",
     "createBtn": "Hisob yaratish",
-    "hasAccount": "Hisobingiz bormi?"
+    "hasAccount": "Hisobingiz bormi?",
+    "chooseRole": "Rolingizni tanlang",
+    "chooseRoleSubtitle": "CareerBoost Pro'dan qanday foydalanishni tanlang",
+    "jobSeekerDesc": "Ish toping, rezyume tuzing va HR mutaxassislaridan maslahat oling",
+    "hrExpertDesc": "Rezyumalarni ko'rib chiqing, intervyu o'tkazing va ish e'lonlari joylashtiring",
+    "continueWithGoogle": "Google orqali davom eting"
   },
   "dashboard": {
     "welcome": "Xush kelibsiz, {{name}}!",

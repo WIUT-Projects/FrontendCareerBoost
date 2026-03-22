@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
@@ -11,16 +10,12 @@ const API_URL = import.meta.env.VITE_API_URL;
 const AUTH_GOOGLE = import.meta.env.VITE_API_AUTH_GOOGLE;
 
 export default function LoginPage() {
-  const { isAuthenticated, profile } = useAuth();
-  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (isAuthenticated && profile) {
-      if (profile.role === 'hr_expert') navigate('/hr-portal');
-      else navigate('/dashboard');
-    }
-  }, [isAuthenticated, profile, navigate]);
+    signOut();
+  }, [signOut]);
 
   const handleGoogleLogin = () => {
     window.location.href = `${API_URL}${AUTH_GOOGLE}`;

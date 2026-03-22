@@ -16,7 +16,7 @@ export interface AdminUserDto {
   id: number;
   email: string;
   fullName: string | null;
-  role: number; // 1=JobSeeker, 2=HrExpert, 3=Admin  (backend enum starts at 1)
+  role: string; // 'jobSeeker' | 'hrExpert' | 'admin'  (camelCase from backend enum)
   createdAt: string;
   updatedAt: string | null;
 }

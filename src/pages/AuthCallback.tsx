@@ -10,7 +10,7 @@ import * as authService from '@/services/authService';
  * yo'naltiriladi. URL parametrlaridan tokenlar olinib, profil yuklanadi,
  * AuthContext yangilanadi va role bo'yicha tegishli sahifaga o'tiladi.
  *
- * URL format: /auth/callback?access_token=...&refresh_token=...&expires_at=...
+ * URL format: /auth/callback?access_token=...&refresh_token=...&expires_at=...&role=...
  */
 export default function AuthCallbackPage() {
   const { signIn } = useAuth();

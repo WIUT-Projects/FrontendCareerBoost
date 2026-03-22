@@ -65,7 +65,12 @@
     "iAmA": "I am a",
     "jobSeeker": "Job Seeker",
     "createBtn": "Create Account",
-    "hasAccount": "Already have an account?"
+    "hasAccount": "Already have an account?",
+    "chooseRole": "Choose your role",
+    "chooseRoleSubtitle": "Select how you want to use CareerBoost Pro",
+    "jobSeekerDesc": "Find jobs, build resumes, and get expert HR reviews",
+    "hrExpertDesc": "Review resumes, conduct interviews, and post job listings",
+    "continueWithGoogle": "Continue with Google"
   },
   "dashboard": {
     "welcome": "Welcome back, {{name}}!",

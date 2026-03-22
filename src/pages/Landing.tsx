@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { FileText, Brain, Users, Briefcase, ArrowRight, CheckCircle, Star } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FileText, Brain, Users, Briefcase, ArrowRight, CheckCircle, Star, LogOut } from 'lucide-react';
 import { PricingSection } from './Subscription';
 import { useTranslation } from 'react-i18next';
 import { TiltCard } from '@/components/shared/TiltCard';
@@ -9,10 +9,18 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import heroImage from '@/assets/hero-illustration.png';
 import { InteractiveDotGrid } from '@/components/shared/InteractiveDotGrid';
+import { useAuth } from '@/contexts/AuthContext';
+import * as authService from '@/services/authService';
 
 export default function LandingPage() {
   const { t } = useTranslation();
+  const { isAuthenticated, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleGoToDashboard = () => {
+    if (profile) navigate(authService.getRedirectPathByRole(profile.role));
+  };
 
   const features = [
     { icon: FileText, title: t('features.resumeBuilder'), description: t('features.resumeBuilderDesc') },
@@ -44,8 +52,19 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <ThemeToggle />
-            <Link to="/login"><Button variant="ghost" size="sm">{t('nav.signIn')}</Button></Link>
-            <Link to="/register"><Button size="sm">{t('nav.getStarted')} <ArrowRight className="ml-1 h-4 w-4" /></Button></Link>
+            {isAuthenticated ? (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleGoToDashboard}>Dashboard</Button>
+                <Button variant="outline" size="sm" onClick={signOut}>
+                  <LogOut className="h-4 w-4 mr-1" /> Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login"><Button variant="ghost" size="sm">{t('nav.signIn')}</Button></Link>
+                <Link to="/register"><Button size="sm">{t('nav.getStarted')} <ArrowRight className="ml-1 h-4 w-4" /></Button></Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

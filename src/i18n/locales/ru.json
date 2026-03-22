@@ -65,7 +65,12 @@
     "iAmA": "Я",
     "jobSeeker": "Соискатель",
     "createBtn": "Создать аккаунт",
-    "hasAccount": "Уже есть аккаунт?"
+    "hasAccount": "Уже есть аккаунт?",
+    "chooseRole": "Выберите роль",
+    "chooseRoleSubtitle": "Выберите, как вы хотите использовать CareerBoost Pro",
+    "jobSeekerDesc": "Ищите работу, создавайте резюме и получайте экспертные отзывы HR",
+    "hrExpertDesc": "Проверяйте резюме, проводите собеседования и размещайте вакансии",
+    "continueWithGoogle": "Продолжить через Google"
   },
   "dashboard": {
     "welcome": "С возвращением, {{name}}!",

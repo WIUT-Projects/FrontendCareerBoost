@@ -43,15 +43,17 @@ export { default as HrJobListingsPage } from './HrJobListings';
 export { default as HrApplicantsPage } from './HrApplicants';
 
 // Admin pages
-export const AdminDashboard = () => <PlaceholderPage icon={BarChart3} title="Admin Overview" description="Platform revenue, user growth, and AI cost KPIs." />;
-export const AdminUsersPage = () => <PlaceholderPage icon={Users} title="User Management" description="Browse, search, and manage all platform users." />;
+export { default as AdminDashboard } from './admin/AdminOverviewPage';
+export { default as AdminUsersPage } from './admin/AdminUsersPage';
 export const AdminResumesPage = () => <PlaceholderPage icon={FileText} title="Resume Moderation" description="Review and moderate all resumes on the platform." />;
-export const AdminTemplatesPage = () => <PlaceholderPage icon={Palette} title="Template Management" description="Approve, activate, and manage resume templates." />;
+export { default as AdminTemplatesPage } from './admin/AdminTemplatesPage';
+export { default as AdminReportsPage } from './admin/AdminReportsPage';
 export const AdminPaymentsPage = () => <PlaceholderPage icon={CreditCard} title="Payment Management" description="View all payments and issue refunds." />;
 export const AdminAiUsagePage = () => <AiPageWrapper><PlaceholderPage icon={Brain} title="AI Usage Logs" description="AI token usage and cost breakdown by model." /></AiPageWrapper>;
 export const AdminRevenuePage = () => <PlaceholderPage icon={BarChart3} title="Revenue Snapshots" description="Daily revenue charts, tables, and CSV export." />;
 export const AdminAuditLogPage = () => <PlaceholderPage icon={ScrollText} title="Audit Log" description="Full audit log of all admin actions." />;
-export const AdminHrVerificationPage = () => <PlaceholderPage icon={UserCheck} title="HR Verification" description="Review and verify HR Expert applications." />;
+export { default as AdminHrVerificationPage } from './admin/AdminHrVerificationPage';
+export { default as AdminBlogPage } from './admin/AdminBlogPage';
 export { default as AdminBlogNewPage } from './AdminBlogNew';
 export { default as AdminBlogEditPage } from './AdminBlogEdit';
 

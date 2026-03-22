@@ -106,7 +106,9 @@
     "account": "Account",
     "adminPanel": "Admin Panel",
     "hrPortal": "HR Portal",
-    "careerBoost": "CareerBoost"
+    "careerBoost": "CareerBoost",
+    "reports": "Reports",
+    "complaints": "Complaints"
   },
   "header": {
     "jobSeeker": "Job Seeker",
@@ -219,6 +221,8 @@
     "useTemplate": "Create Resume with this Template",
     "loginToCreate": "Log in to create a resume",
     "templates": "Templates",
+    "templatePageTitle": "Resume Templates",
+    "templatePageSubtitle": "Choose an ATS-ready template in your preferred style. Download as PDF � no paywall, no watermarks.",
     "allTemplates": "All Templates",
     "free": "Free",
     "premium": "Premium",

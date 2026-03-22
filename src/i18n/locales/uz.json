@@ -105,7 +105,9 @@
     "account": "Hisob",
     "adminPanel": "Admin paneli",
     "hrPortal": "HR portali",
-    "careerBoost": "CareerBoost"
+    "careerBoost": "CareerBoost",
+    "reports": "Hisobotlar",
+    "complaints": "Shikoyatlar"
   },
   "header": {
     "jobSeeker": "Ish qidiruvchi",
@@ -218,6 +220,8 @@
     "useTemplate": "Shu shablon bilan rezyume yaratish",
     "loginToCreate": "Rezyume yaratish uchun kiring",
     "templates": "Shablonlar",
+    "templatePageTitle": "Rezyume shablonlari",
+    "templatePageSubtitle": "ATS-moslashgan shablonni tanlang. To'lovlarsiz va suv belgisisiz PDF sifatida yuklab oling.",
     "allTemplates": "Barcha shablonlar",
     "free": "Bepul",
     "premium": "Premium",

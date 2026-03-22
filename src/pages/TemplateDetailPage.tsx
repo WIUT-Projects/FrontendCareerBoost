@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Download, Loader2, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { AuthModal } from '@/components/shared/AuthModal';
 import { getTemplateById, createResume } from '@/services/resumeService';
 import { loadSession } from '@/services/authService';
@@ -60,7 +59,7 @@ export default function TemplateDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -68,7 +67,7 @@ export default function TemplateDetailPage() {
 
   if (!template) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="h-full flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Template not found</p>
         <Button variant="outline" onClick={() => navigate('/templates')}>
           <ArrowLeft className="h-4 w-4 mr-1" /> {t('resume.templates')}
@@ -78,73 +77,65 @@ export default function TemplateDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      {/* Scrollable page content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          {/* Back link — inline at top of content */}
           <button
             onClick={() => navigate('/templates')}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
             {t('resume.templates')}
           </button>
-          <div className="flex items-center gap-2">
-            <Button onClick={handleCreate} disabled={creating} className="gap-1.5">
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
-              {t('resume.useTemplate')}
-            </Button>
-            <LanguageSwitcher />
-          </div>
-        </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left: Info */}
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold">{template.name}</h1>
-              {template.category && (
-                <p className="text-muted-foreground text-sm mt-1">{template.category}</p>
-              )}
-              <div className="flex gap-2 mt-3">
-                <Badge variant={template.tier === 'premium' ? 'default' : 'secondary'}>
-                  {template.tier === 'premium' ? t('resume.premium') : t('resume.free')}
-                </Badge>
-                {template.downloadCount > 0 && (
-                  <Badge variant="outline" className="gap-1">
-                    <Download className="h-3 w-3" />
-                    {template.downloadCount} {t('resume.downloads')}
-                  </Badge>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left: Info */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold">{template.name}</h1>
+                {template.category && (
+                  <p className="text-muted-foreground text-sm mt-1">{template.category}</p>
                 )}
+                <div className="flex gap-2 mt-3">
+                  <Badge variant={template.tier === 'premium' ? 'default' : 'secondary'}>
+                    {template.tier === 'premium' ? t('resume.premium') : t('resume.free')}
+                  </Badge>
+                  {template.downloadCount > 0 && (
+                    <Badge variant="outline" className="gap-1">
+                      <Download className="h-3 w-3" />
+                      {template.downloadCount} {t('resume.downloads')}
+                    </Badge>
+                  )}
+                </div>
               </div>
+
+              <Button onClick={handleCreate} disabled={creating} size="lg" className="w-full gap-2">
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+                {t('resume.useTemplate')}
+              </Button>
+
+              {!session && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {t('resume.loginToCreate')}
+                </p>
+              )}
             </div>
 
-            <Button onClick={handleCreate} disabled={creating} size="lg" className="w-full gap-2">
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
-              {t('resume.useTemplate')}
-            </Button>
-
-            {!session && (
-              <p className="text-xs text-muted-foreground text-center">
-                {t('resume.loginToCreate')}
-              </p>
-            )}
-          </div>
-
-          {/* Right: Preview */}
-          <div className="lg:col-span-2">
-            <div className="border rounded-xl overflow-hidden shadow-lg">
-              <div className="overflow-auto max-h-[80vh] bg-gray-50 flex justify-center p-4">
-                <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center', width: '210mm' }}>
-                  <ResumeRenderer sections={DEMO_SECTIONS} templateId={template.id} />
+            {/* Right: Preview */}
+            <div className="lg:col-span-2">
+              <div className="border rounded-xl overflow-hidden shadow-lg">
+                <div className="overflow-auto max-h-[75vh] bg-gray-50 flex justify-center p-4">
+                  <div style={{ zoom: 0.7, width: '210mm' }}>
+                    <ResumeRenderer sections={DEMO_SECTIONS} templateId={template.id} />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <AuthModal
         open={authOpen}

@@ -105,7 +105,9 @@
     "account": "Аккаунт",
     "adminPanel": "Админ панель",
     "hrPortal": "HR портал",
-    "careerBoost": "CareerBoost"
+    "careerBoost": "CareerBoost",
+    "reports": "Отчёты",
+    "complaints": "Жалобы"
   },
   "header": {
     "jobSeeker": "Соискатель",

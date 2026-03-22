@@ -78,7 +78,7 @@ export function AppHeader() {
   const navItems = isAdmin ? adminNav : isHr ? hrExpertNav : jobSeekerNav;
 
   return (
-    <header className="h-14 flex items-center justify-between border-b bg-card px-4 gap-2">
+    <header className="sticky top-0 z-50 h-14 flex items-center justify-between border-b bg-card px-4 gap-2">
       {/* Left: Logo */}
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">

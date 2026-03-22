@@ -1,24 +1,193 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Palette, Download, Star, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Download, Loader2, Palette, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { Button } from '@/components/ui/button';
 import { getTemplates } from '@/services/resumeService';
 import { loadSession } from '@/services/authService';
-import type { ResumeTemplateDto } from '@/types/resume';
+import type { ResumeTemplateDto, ResumeSectionDto } from '@/types/resume';
+import ResumeRenderer from '@/components/resume/ResumeRenderer';
 
-// Template preview colors (when no thumbnailUrl)
-const PREVIEW_STYLES: Record<number, { bg: string; accent: string }> = {
-  1: { bg: '#f8fafc', accent: '#1a1a1a' },
-  2: { bg: '#eff6ff', accent: '#2563eb' },
-  3: { bg: '#f0fdf4', accent: '#16a34a' },
-  4: { bg: '#fdf4ff', accent: '#9333ea' },
-  5: { bg: '#fff7ed', accent: '#ea580c' },
-};
-const getStyle = (id: number) => PREVIEW_STYLES[id] ?? { bg: '#f8fafc', accent: '#374151' };
+// ── Demo data for previewing each template (exported for admin page) ────────
+export const DEMO_SECTIONS: ResumeSectionDto[] = [
+  {
+    id: 1, sectionType: 'overview', sortOrder: 0,
+    content: JSON.stringify({
+      fullName: 'Alex Johnson',
+      title: 'Senior Software Engineer',
+      email: 'alex@example.com',
+      phone: '+1 555 234 567',
+      location: 'San Francisco, CA',
+      website: 'alexj.dev',
+      summary:
+        'Full-stack engineer with 6+ years building scalable products. Passionate about clean architecture and developer experience.',
+    }),
+  },
+  {
+    id: 2, sectionType: 'experience', sortOrder: 1,
+    content: JSON.stringify([
+      {
+        id: 'e1', company: 'Stripe', position: 'Senior Engineer',
+        startDate: 'Jan 2022', endDate: '', current: true,
+        bullets: ['Led payments SDK redesign', 'Reduced latency 40%', 'Mentored 4 engineers'],
+      },
+      {
+        id: 'e2', company: 'Twilio', position: 'Software Engineer',
+        startDate: 'Mar 2019', endDate: 'Dec 2021', current: false,
+        bullets: ['Built messaging pipeline handling 10M msgs/day', 'Improved CI/CD speed by 60%'],
+      },
+    ]),
+  },
+  {
+    id: 3, sectionType: 'education', sortOrder: 2,
+    content: JSON.stringify([
+      {
+        id: 'ed1', school: 'MIT', degree: "Bachelor's", field: 'Computer Science',
+        startDate: 'Sep 2015', endDate: 'Jun 2019', current: false, description: '',
+      },
+    ]),
+  },
+  {
+    id: 4, sectionType: 'projects', sortOrder: 3,
+    content: JSON.stringify([
+      {
+        id: 'p1', name: 'OpenResume', url: 'github.com/open-resume',
+        technologies: ['React', 'TypeScript', 'Node.js'],
+        description: 'Open-source resume builder used by 50k+ devs',
+        bullets: ['Built in 3 months', 'Featured on Product Hunt'],
+      },
+    ]),
+  },
+  {
+    id: 5, sectionType: 'skills', sortOrder: 4,
+    content: JSON.stringify([
+      { id: 's1', category: 'Frontend', skills: ['React', 'TypeScript', 'TailwindCSS'] },
+      { id: 's2', category: 'Backend', skills: ['.NET', 'PostgreSQL', 'Docker'] },
+    ]),
+  },
+  {
+    id: 6, sectionType: 'languages', sortOrder: 5,
+    content: JSON.stringify([
+      { id: 'l1', language: 'English', proficiency: 'native' },
+      { id: 'l2', language: 'Spanish', proficiency: 'intermediate' },
+    ]),
+  },
+];
 
+// ── Zoomed card preview — renders actual ResumeRenderer at A4 scale ─────────
+function TemplatePreview({ templateId }: { templateId: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(0.35);
+
+  useEffect(() => {
+    if (!wrapRef.current) return;
+    const obs = new ResizeObserver(([entry]) => {
+      // A4 width in px at 96dpi ≈ 794px
+      setZoom(entry.contentRect.width / 794);
+    });
+    obs.observe(wrapRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div ref={wrapRef} className="w-full h-full overflow-hidden">
+      <div
+        style={{
+          width: '794px',
+          transformOrigin: 'top left',
+          transform: `scale(${zoom})`,
+          // Keep the height from overflowing the card
+          height: `${100 / zoom}%`,
+          pointerEvents: 'none',
+        }}
+      >
+        <ResumeRenderer sections={DEMO_SECTIONS} templateId={templateId} />
+      </div>
+    </div>
+  );
+}
+
+// ── Template card ────────────────────────────────────────────────────────────
+function TemplateCard({
+  template,
+  onClick,
+}: {
+  template: ResumeTemplateDto;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation();
+  const isPremium = template.tier === 'premium';
+
+  return (
+    <div
+      onClick={onClick}
+      className="group cursor-pointer flex flex-col"
+    >
+      {/* Preview — A4 aspect ratio (210/297) */}
+      <div
+        className="relative w-full overflow-hidden rounded-xl shadow-md ring-1 ring-border
+                   group-hover:shadow-xl group-hover:ring-primary/40 transition-all duration-300"
+        style={{ aspectRatio: '210 / 297' }}
+      >
+        {template.thumbnailUrl ? (
+          <img
+            src={template.thumbnailUrl}
+            alt={template.name}
+            className="w-full h-full object-cover object-top"
+          />
+        ) : (
+          <TemplatePreview templateId={template.id} />
+        )}
+
+        {/* Premium badge — top-left */}
+        {isPremium && (
+          <div className="absolute top-2.5 left-2.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold
+                             bg-amber-400/90 text-amber-900 backdrop-blur-sm shadow">
+              <Sparkles className="h-2.5 w-2.5" />
+              {t('resume.premium')}
+            </span>
+          </div>
+        )}
+
+        {/* Hover overlay */}
+        <div
+          className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300
+                     flex items-center justify-center"
+        >
+          <Button
+            size="sm"
+            className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
+                       transition-all duration-300 shadow-lg"
+          >
+            {t('resume.useTemplate')}
+          </Button>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-2.5 px-0.5 flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-sm text-foreground">{template.name}</p>
+          {template.downloadCount > 0 && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Download className="h-3 w-3" />
+              {template.downloadCount.toLocaleString()} {t('resume.downloads')}
+            </p>
+          )}
+        </div>
+        {!isPremium && (
+          <Badge variant="secondary" className="text-xs font-medium">
+            {t('resume.free')}
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 export default function TemplatesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -35,239 +204,80 @@ export default function TemplatesPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = activeFilter === 'all'
-    ? templates
-    : templates.filter((t) => t.tier === activeFilter);
+  const filtered =
+    activeFilter === 'all'
+      ? templates
+      : templates.filter((t) => t.tier === activeFilter);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Palette className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold">{t('resume.templates')}</h1>
-          </div>
-          <div className="flex items-center gap-2">
+    <div className="h-full flex flex-col bg-background">
+      {/* ── Hero header ── */}
+      <div className="flex-shrink-0 border-b bg-background">
+        <div className="max-w-6xl mx-auto px-6 pt-8 pb-5">
+          <div className="flex items-end justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {t('resume.templatePageTitle')}
+              </h1>
+              <p className="mt-1 text-muted-foreground text-sm max-w-xl">
+                {t('resume.templatePageSubtitle')}
+              </p>
+            </div>
             {session && (
               <Button variant="outline" size="sm" onClick={() => navigate('/resumes')}>
                 {t('resume.myResumes')}
               </Button>
             )}
-            <LanguageSwitcher />
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Filter tabs */}
-        <div className="flex gap-2 mb-8">
-          {(['all', 'free', 'premium'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                activeFilter === f
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {f === 'all' ? t('resume.allTemplates') : f === 'free' ? t('resume.free') : t('resume.premium')}
-            </button>
-          ))}
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-24 text-muted-foreground">
-            <Palette className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p>{t('resume.noResumes')}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((tmpl) => (
-              <TemplateCard
-                key={tmpl.id}
-                template={tmpl}
-                onClick={() => navigate(`/templates/${tmpl.id}`)}
-              />
+          {/* Filter tabs */}
+          <div className="flex items-center gap-2 mt-5">
+            {(['all', 'free', 'premium'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 ${
+                  activeFilter === f
+                    ? 'bg-foreground text-background shadow'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                {f === 'all'
+                  ? t('resume.allTemplates')
+                  : f === 'free'
+                    ? t('resume.free')
+                    : t('resume.premium')}
+              </button>
             ))}
           </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
-function TemplateCard({ template, onClick }: { template: ResumeTemplateDto; onClick: () => void }) {
-  const { t } = useTranslation();
-  const style = getStyle(template.id);
-
-  return (
-    <div
-      className="group border rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 bg-card"
-      onClick={onClick}
-    >
-      {/* Preview area */}
-      <div
-        className="relative h-52 flex items-center justify-center overflow-hidden"
-        style={{ background: style.bg }}
-      >
-        {template.thumbnailUrl ? (
-          <img
-            src={template.thumbnailUrl}
-            alt={template.name}
-            className="w-full h-full object-cover object-top"
-          />
-        ) : (
-          <TemplateMiniPreview id={template.id} name={template.name} style={style} />
-        )}
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Button size="sm" className="gap-1.5">
-            <Star className="h-3.5 w-3.5" />
-            {t('resume.preview')}
-          </Button>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-sm">{template.name}</p>
-          {template.category && (
-            <p className="text-xs text-muted-foreground">{template.category}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={template.tier === 'premium' ? 'default' : 'secondary'} className="text-xs">
-            {template.tier === 'premium' ? t('resume.premium') : t('resume.free')}
-          </Badge>
-          {template.downloadCount > 0 && (
-            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-              <Download className="h-3 w-3" />
-              {template.downloadCount}
-            </span>
+      {/* ── Scrollable grid ── */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          {loading ? (
+            <div className="flex items-center justify-center py-32">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-32 text-muted-foreground">
+              <Palette className="h-12 w-12 mx-auto mb-4 opacity-25" />
+              <p className="text-sm">{t('resume.noResumes')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+              {filtered.map((tmpl) => (
+                <TemplateCard
+                  key={tmpl.id}
+                  template={tmpl}
+                  onClick={() => navigate(`/templates/${tmpl.id}`)}
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-// ─── CSS-based mini template previews ─────────────────────────────────────────
-
-function TemplateMiniPreview({
-  id,
-  name,
-  style,
-}: {
-  id: number;
-  name: string;
-  style: { bg: string; accent: string };
-}) {
-  // Modern template: colored header + 2 columns
-  if (id === 2) {
-    return (
-      <div className="w-36 h-44 bg-white rounded shadow-md overflow-hidden text-left" style={{ fontSize: '5px', lineHeight: 1.4 }}>
-        <div style={{ background: style.accent, padding: '6px 8px', color: '#fff' }}>
-          <div style={{ fontWeight: 700, fontSize: '7px' }}>John Doe</div>
-          <div style={{ opacity: 0.85, fontSize: '5px' }}>Software Engineer</div>
-        </div>
-        <div style={{ display: 'flex', height: 'calc(100% - 36px)' }}>
-          <div style={{ width: '40%', background: '#f8fafc', padding: '4px', borderRight: '1px solid #e2e8f0' }}>
-            <div style={{ color: style.accent, fontWeight: 700, fontSize: '4px', marginBottom: '2px' }}>SKILLS</div>
-            <div style={{ background: '#e0e7ff', borderRadius: '3px', padding: '1px 3px', marginBottom: '1px', color: style.accent, fontSize: '4px' }}>React</div>
-            <div style={{ background: '#e0e7ff', borderRadius: '3px', padding: '1px 3px', marginBottom: '1px', color: style.accent, fontSize: '4px' }}>.NET</div>
-            <div style={{ background: '#e0e7ff', borderRadius: '3px', padding: '1px 3px', color: style.accent, fontSize: '4px' }}>Docker</div>
-          </div>
-          <div style={{ flex: 1, padding: '4px' }}>
-            <div style={{ color: style.accent, fontWeight: 700, fontSize: '4px', marginBottom: '3px' }}>EXPERIENCE</div>
-            <div style={{ fontWeight: 600, fontSize: '5px' }}>Sr. Developer</div>
-            <div style={{ color: style.accent, fontSize: '4px' }}>TechCorp</div>
-            <div style={{ opacity: 0.5, fontSize: '3.5px' }}>2022 – Present</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Minimal template: ultra-clean, gray
-  if (id === 3) {
-    return (
-      <div className="w-36 h-44 bg-white rounded shadow-md p-4 text-left" style={{ fontSize: '5px', lineHeight: 1.5 }}>
-        <div style={{ fontWeight: 300, fontSize: '9px', color: '#111', letterSpacing: '-0.3px' }}>John Doe</div>
-        <div style={{ color: '#999', fontSize: '5px', marginBottom: '6px' }}>Software Engineer</div>
-        <div style={{ height: '1px', background: '#f0f0f0', marginBottom: '5px' }} />
-        <div style={{ color: '#bbb', fontSize: '3.5px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '3px' }}>Experience</div>
-        <div style={{ fontWeight: 600, fontSize: '5px' }}>Sr. Developer</div>
-        <div style={{ color: '#888', fontSize: '4px' }}>TechCorp · 2022–Now</div>
-        <div style={{ color: '#bbb', fontSize: '3.5px', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '5px', marginBottom: '3px' }}>Skills</div>
-        <div style={{ color: '#666', fontSize: '4px' }}>React, .NET, Docker, PostgreSQL</div>
-      </div>
-    );
-  }
-
-  // Executive (id=4): dark sidebar
-  if (id === 4) {
-    return (
-      <div className="w-36 h-44 bg-white rounded shadow-md overflow-hidden text-left" style={{ fontSize: '5px', lineHeight: 1.4, display: 'flex' }}>
-        <div style={{ width: '35%', background: '#1e293b', padding: '6px 4px', color: '#fff' }}>
-          <div style={{ fontWeight: 700, fontSize: '6px', marginBottom: '8px' }}>JD</div>
-          <div style={{ color: '#94a3b8', fontSize: '3.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Skills</div>
-          <div style={{ fontSize: '4px', marginBottom: '1px' }}>React</div>
-          <div style={{ fontSize: '4px', marginBottom: '1px' }}>.NET</div>
-          <div style={{ fontSize: '4px', marginBottom: '1px' }}>SQL</div>
-        </div>
-        <div style={{ flex: 1, padding: '6px' }}>
-          <div style={{ fontWeight: 700, fontSize: '7px', color: '#1e293b' }}>John Doe</div>
-          <div style={{ color: '#64748b', fontSize: '5px', marginBottom: '5px' }}>Sr. Engineer</div>
-          <div style={{ color: style.accent, fontWeight: 700, fontSize: '4px', marginBottom: '2px' }}>EXPERIENCE</div>
-          <div style={{ fontWeight: 600, fontSize: '5px' }}>Tech Lead</div>
-          <div style={{ color: '#888', fontSize: '4px' }}>Corp · 2022–Now</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Creative (id=5): bold colorful accent
-  if (id === 5) {
-    return (
-      <div className="w-36 h-44 bg-white rounded shadow-md overflow-hidden text-left" style={{ fontSize: '5px', lineHeight: 1.4 }}>
-        <div style={{ background: style.accent, height: '4px' }} />
-        <div style={{ padding: '6px 8px' }}>
-          <div style={{ fontWeight: 800, fontSize: '8px', color: '#111', letterSpacing: '-0.5px' }}>John Doe</div>
-          <div style={{ color: style.accent, fontSize: '5px', fontWeight: 600, marginBottom: '6px' }}>Software Engineer</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px', marginBottom: '5px' }}>
-            {['React', '.NET', 'Docker'].map((s) => (
-              <span key={s} style={{ background: style.bg, color: style.accent, padding: '1px 3px', borderRadius: '2px', fontSize: '4px', fontWeight: 600 }}>{s}</span>
-            ))}
-          </div>
-          <div style={{ borderLeft: `2px solid ${style.accent}`, paddingLeft: '4px' }}>
-            <div style={{ fontWeight: 700, fontSize: '5px' }}>Sr. Developer</div>
-            <div style={{ color: '#888', fontSize: '4px' }}>TechCorp · 2022–Now</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Default / Classic (id=1)
-  return (
-    <div className="w-36 h-44 bg-white rounded shadow-md p-3 text-left" style={{ fontSize: '5px', lineHeight: 1.4, fontFamily: 'Georgia, serif' }}>
-      <div style={{ textAlign: 'center', borderBottom: '1.5px solid #1a1a1a', paddingBottom: '4px', marginBottom: '4px' }}>
-        <div style={{ fontWeight: 700, fontSize: '7px', letterSpacing: '1px' }}>JOHN DOE</div>
-        <div style={{ color: '#555', fontSize: '5px' }}>Software Engineer</div>
-      </div>
-      <div style={{ fontWeight: 700, fontSize: '4.5px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Experience</div>
-      <div style={{ fontSize: '4.5px', fontWeight: 600 }}>Senior Developer</div>
-      <div style={{ color: '#666', fontSize: '4px', fontStyle: 'italic' }}>TechCorp · 2022–Present</div>
-      <div style={{ fontWeight: 700, fontSize: '4.5px', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px', marginBottom: '2px' }}>Education</div>
-      <div style={{ fontSize: '4.5px', fontWeight: 600 }}>BS Computer Science</div>
-      <div style={{ color: '#666', fontSize: '4px', fontStyle: 'italic' }}>MIT · 2020</div>
     </div>
   );
 }

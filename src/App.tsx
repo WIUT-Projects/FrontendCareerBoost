@@ -26,8 +26,9 @@ import {
   HrPortalDashboard, HrReviewsPage, HrReviewDetailPage, HrAvailabilityPage,
   HrProfileEditPage, HrRatingsPage, HrJobListingsPage, HrApplicantsPage,
   AdminDashboard, AdminUsersPage, AdminResumesPage, AdminTemplatesPage,
-  AdminPaymentsPage, AdminAiUsagePage, AdminRevenuePage, AdminAuditLogPage,
-  AdminHrVerificationPage, AdminBlogNewPage, AdminBlogEditPage,
+  AdminReportsPage, AdminPaymentsPage, AdminAiUsagePage, AdminRevenuePage,
+  AdminAuditLogPage, AdminHrVerificationPage,
+  AdminBlogPage, AdminBlogNewPage, AdminBlogEditPage,
   ForbiddenPage,
 } from "./pages/AllPages";
 
@@ -116,8 +117,10 @@ const App = () => (
                   <Route path="/admin/ai-usage" element={<AdminAiUsagePage />} />
                   <Route path="/admin/revenue" element={<AdminRevenuePage />} />
                   <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
+                  <Route path="/admin/reports" element={<AdminReportsPage />} />
                   <Route path="/admin/hr-verification" element={<AdminHrVerificationPage />} />
                   <Route path="/admin/jobs" element={<HrJobListingsPage />} />
+                  <Route path="/admin/blog" element={<AdminBlogPage />} />
                   <Route path="/admin/blog/new" element={<AdminBlogNewPage />} />
                   <Route path="/admin/blog/:id" element={<AdminBlogEditPage />} />
                 </Route>

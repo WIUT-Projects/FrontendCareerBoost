@@ -2,7 +2,7 @@ import {
   LayoutDashboard, FileText, Palette, Brain, Users, Briefcase,
   MessageSquare, Bell, Settings, BookOpen, Calendar,
   Star, ClipboardList, BarChart3, CreditCard, UserCheck, ScrollText,
-  LogOut, ChevronUp, Sparkles
+  LogOut, ChevronUp, Sparkles, MessageSquareWarning,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,17 +63,17 @@ export function AppSidebar() {
   ];
 
   const adminNav = [
-    { title: t('sidebar.overview'), url: '/admin', icon: LayoutDashboard },
-    { title: t('sidebar.users'), url: '/admin/users', icon: Users },
-    { title: t('sidebar.myResumes'), url: '/admin/resumes', icon: FileText },
-    { title: t('sidebar.templates'), url: '/admin/templates', icon: Palette },
-    { title: t('sidebar.payments'), url: '/admin/payments', icon: CreditCard },
-    { title: t('sidebar.aiUsage'), url: '/admin/ai-usage', icon: Brain },
-    { title: t('sidebar.revenue'), url: '/admin/revenue', icon: BarChart3 },
-    { title: t('sidebar.auditLog'), url: '/admin/audit-log', icon: ScrollText },
-    { title: t('sidebar.hrVerification'), url: '/admin/hr-verification', icon: UserCheck },
-    { title: t('sidebar.jobs'), url: '/admin/jobs', icon: Briefcase },
-    { title: t('sidebar.blog'), url: '/admin/blog/new', icon: BookOpen },
+    { title: t('sidebar.overview'),        url: '/admin',                 icon: LayoutDashboard },
+    { title: t('sidebar.users'),           url: '/admin/users',           icon: Users           },
+    { title: t('sidebar.templates'),       url: '/admin/templates',       icon: Palette         },
+    { title: t('sidebar.complaints'),       url: '/admin/reports',         icon: MessageSquareWarning },
+    { title: t('sidebar.payments'),        url: '/admin/payments',        icon: CreditCard      },
+    { title: t('sidebar.aiUsage'),         url: '/admin/ai-usage',        icon: Brain           },
+    { title: t('sidebar.revenue'),         url: '/admin/revenue',         icon: BarChart3       },
+    { title: t('sidebar.auditLog'),        url: '/admin/audit-log',       icon: ScrollText      },
+    { title: t('sidebar.hrVerification'), url: '/admin/hr-verification',  icon: UserCheck       },
+    { title: t('sidebar.jobs'),            url: '/admin/jobs',            icon: Briefcase       },
+    { title: t('sidebar.blog'),            url: '/admin/blog',            icon: BookOpen        },
   ];
 
   const isJobseeker = !profile?.role || profile.role === 'jobseeker';

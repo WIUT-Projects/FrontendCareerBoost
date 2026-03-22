@@ -14,9 +14,9 @@ export function AppLayout() {
   // Jobseeker: header-only nav (no sidebar)
   if (isJobseeker) {
     return (
-      <div className="min-h-screen flex flex-col w-full">
+      <div className="h-screen flex flex-col w-full overflow-hidden">
         <AppHeader />
-        <main className="flex-1 p-6 animate-fade-in">
+        <main className="flex-1 overflow-y-auto animate-fade-in">
           <Outlet />
         </main>
       </div>

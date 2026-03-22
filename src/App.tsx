@@ -54,7 +54,7 @@ const App = () => (
               <Route path="/403" element={<ForbiddenPage />} />
 
               {/* JobSeeker routes */}
-              <Route element={<ProtectedRoute allowedRoles={['jobseeker']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['jobseeker', 'admin']} />}>
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/resumes" element={<ResumesPage />} />

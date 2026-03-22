@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Download, Loader2, Star } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Star, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AuthModal } from '@/components/shared/AuthModal';
@@ -31,6 +31,7 @@ export default function TemplateDetailPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -41,6 +42,7 @@ export default function TemplateDetailPage() {
   }, [id]);
 
   const handleCreate = async () => {
+    setError(null);
     if (!session) { setAuthOpen(true); return; }
     if (!template) return;
     setCreating(true);
@@ -50,7 +52,9 @@ export default function TemplateDetailPage() {
         templateId: template.id,
       });
       navigate(`/resumes/${resume.id}/edit`);
-    } catch (e) {
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to create resume';
+      setError(msg);
       console.error(e);
     } finally {
       setCreating(false);
@@ -110,6 +114,15 @@ export default function TemplateDetailPage() {
                   )}
                 </div>
               </div>
+
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-destructive">{error}</p>
+                  </div>
+                </div>
+              )}
 
               <Button onClick={handleCreate} disabled={creating} size="lg" className="w-full gap-2">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}

@@ -181,6 +181,7 @@ function TemplateCard({
           >
             <Button
               size="sm"
+              onClick={onClick}
               className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
                          transition-all duration-300 shadow-lg"
             >

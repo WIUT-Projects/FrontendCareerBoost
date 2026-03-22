@@ -9,6 +9,17 @@ const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 // ─── Templates ────────────────────────────────────────────────────────────────
 
+// Backend may return tier as number (1=free, 2=premium) or string ("free","premium")
+function normalizeTier(tier: unknown): 'free' | 'premium' {
+  if (tier === 1 || tier === 'free' || tier === 'Free') return 'free';
+  if (tier === 2 || tier === 'premium' || tier === 'Premium') return 'premium';
+  return 'free';
+}
+
+function normalizeTemplate(t: any): ResumeTemplateDto {
+  return { ...t, tier: normalizeTier(t.tier) };
+}
+
 export async function getTemplates(params?: {
   pageIndex?: number;
   pageSize?: number;
@@ -23,13 +34,15 @@ export async function getTemplates(params?: {
 
   const res = await fetch(`${API_URL}/api/resume-templates?${q}`);
   if (!res.ok) throw new Error('Failed to fetch templates');
-  return res.json();
+  const data = await res.json();
+  return { ...data, items: (data.items ?? []).map(normalizeTemplate) };
 }
 
 export async function getTemplateById(id: number): Promise<ResumeTemplateDto> {
   const res = await fetch(`${API_URL}/api/resume-templates/${id}`);
   if (!res.ok) throw new Error('Template not found');
-  return res.json();
+  const data = await res.json();
+  return normalizeTemplate(data);
 }
 
 // ─── Resumes ──────────────────────────────────────────────────────────────────

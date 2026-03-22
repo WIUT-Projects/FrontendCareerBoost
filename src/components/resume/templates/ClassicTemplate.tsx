@@ -68,7 +68,7 @@ export default function ClassicTemplate({ data }: Props) {
       {education.length > 0 && (
         <SectionBlock title="Education">
           {education.map((item) => (
-            <div key={item.id} style={{ marginBottom: '10px' }}>
+            <div key={item.id} style={{ marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <strong style={{ fontSize: '12px' }}>{item.school}</strong>
                 <span style={{ color: '#666', fontSize: '10px' }}>

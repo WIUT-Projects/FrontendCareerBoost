@@ -47,7 +47,7 @@ export interface ResumeTemplateDto {
   name: string;
   thumbnailUrl: string | null;
   previewUrl: string | null;
-  tier: string | null;
+  tier: 'free' | 'premium';
   priceUzs: number | null;
   category: string | null;
   downloadCount: number;

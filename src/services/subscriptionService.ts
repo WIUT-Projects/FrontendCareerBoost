@@ -1,5 +1,15 @@
+import { loadSession } from './authService';
+
 const API_URL = import.meta.env.VITE_API_URL;
 const PLANS_PATH = import.meta.env.VITE_API_SUBSCRIPTION_PLANS;
+
+function authHeaders() {
+  const session = loadSession();
+  return {
+    'Content-Type': 'application/json',
+    ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
+  };
+}
 
 export interface SubscriptionPlanDto {
   id: number;
@@ -18,4 +28,22 @@ export async function getSubscriptionPlans(): Promise<SubscriptionPlanDto[]> {
   if (!res.ok) throw new Error('Failed to fetch subscription plans');
   const data = await res.json() as { items: SubscriptionPlanDto[] };
   return data.items;
+}
+
+export interface SubscriptionStatus {
+  planName: string;
+  aiAnalysisEnabled: boolean;
+  hrReviewEnabled: boolean;
+  freeTemplatesLimit: number; // 1 for free plan; 0 = unlimited
+  freeTemplatesUsed: number;
+  hasActivePlan: boolean;
+  expiresAt: string | null;
+}
+
+export async function getMySubscriptionStatus(): Promise<SubscriptionStatus> {
+  const res = await fetch(`${API_URL}${PLANS_PATH}/my-status`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch subscription status');
+  return res.json();
 }

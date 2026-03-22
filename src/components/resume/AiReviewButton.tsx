@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { Lock, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { CSSProperties, MouseEventHandler } from 'react';
 
@@ -58,6 +58,8 @@ function injectStyles() {
 /* ── Types ───────────────────────────────────────────────────────────────── */
 interface AiReviewButtonProps {
   onClick?: () => void;
+  /** When true, renders a locked upgrade prompt instead of the AI button */
+  locked?: boolean;
   /** 'full' = icon + text (default), 'icon' = icon only (mobile) */
   variant?: 'full' | 'icon';
   /** sm fits in a tight toolbar strip, md is the default */
@@ -67,11 +69,41 @@ interface AiReviewButtonProps {
 /* ── Component ───────────────────────────────────────────────────────────── */
 export function AiReviewButton({
   onClick,
+  locked = false,
   variant = 'full',
   size = 'sm',
 }: AiReviewButtonProps) {
   const { t } = useTranslation();
   injectStyles();
+
+  // Locked state — show upgrade prompt instead of animated button
+  if (locked) {
+    const isIcon = variant === 'icon';
+    const isSm = size === 'sm';
+    return (
+      <button
+        onClick={onClick}
+        title={t('resume.aiReviewLocked')}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          padding: isIcon ? '5px' : isSm ? '5px 12px' : '7px 16px',
+          borderRadius: '9px',
+          border: '1px solid hsl(var(--border))',
+          background: 'hsl(var(--muted))',
+          color: 'hsl(var(--muted-foreground))',
+          fontSize: isSm ? '13px' : '14px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <Lock aria-hidden="true" style={{ width: 13, height: 13, flexShrink: 0 }} />
+        {!isIcon && <span>{t('resume.aiReviewLocked')}</span>}
+      </button>
+    );
+  }
 
   const isIcon = variant === 'icon';
   const isSm   = size === 'sm';

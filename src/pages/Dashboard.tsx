@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -8,13 +9,20 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getMySubscriptionStatus } from '@/services/subscriptionService';
 
 const DashboardPage = () => {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const currentPlan = 'Free';
   const firstName = profile?.fullName?.split(' ')[0] || '';
+  const [currentPlan, setCurrentPlan] = useState('Free');
+
+  useEffect(() => {
+    getMySubscriptionStatus()
+      .then((s) => setCurrentPlan(s.planName))
+      .catch(() => null);
+  }, []);
 
   const quickLinks = [
     { icon: FileText, label: t('sidebar.myResumes'), url: '/resumes', count: 3 },

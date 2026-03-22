@@ -104,7 +104,7 @@ export default function ModernTemplate({ data }: Props) {
           {education.length > 0 && (
             <Sidebar title="Education" accent={ACCENT}>
               {education.map((item) => (
-                <div key={item.id} style={{ marginBottom: '12px' }}>
+                <div key={item.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                   <div style={{ fontWeight: 600 }}>{item.school}</div>
                   {(item.degree || item.field) && (
                     <div style={{ color: '#555', fontSize: '10px' }}>

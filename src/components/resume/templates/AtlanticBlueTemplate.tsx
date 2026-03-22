@@ -171,7 +171,7 @@ export default function AtlanticBlueTemplate({ data }: Props) {
         {education.length > 0 && (
           <MainSection title="Education">
             {education.map((item) => (
-              <div key={item.id} style={{ marginBottom: '12px' }}>
+              <div key={item.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div style={{ fontWeight: 700, fontSize: '11px' }}>{item.school}</div>
                 {(item.degree || item.field) && (
                   <div style={{ color: '#444', fontSize: '10px', marginBottom: '1px' }}>

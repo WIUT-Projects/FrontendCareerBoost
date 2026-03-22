@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Download, Loader2, Palette, Sparkles } from 'lucide-react';
+import { Download, Loader2, Lock, Palette, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getTemplates } from '@/services/resumeService';
 import { loadSession } from '@/services/authService';
+import { getMySubscriptionStatus } from '@/services/subscriptionService';
+import type { SubscriptionStatus } from '@/services/subscriptionService';
 import type { ResumeTemplateDto, ResumeSectionDto } from '@/types/resume';
 import ResumeRenderer from '@/components/resume/ResumeRenderer';
 
@@ -111,13 +113,23 @@ function TemplatePreview({ templateId }: { templateId: number }) {
 // ── Template card ────────────────────────────────────────────────────────────
 function TemplateCard({
   template,
+  subStatus,
   onClick,
 }: {
   template: ResumeTemplateDto;
+  subStatus: SubscriptionStatus | null;
   onClick: () => void;
 }) {
   const { t } = useTranslation();
   const isPremium = template.tier === 'premium';
+
+  // Determine if this template is locked for the current user
+  const isLocked = (() => {
+    if (!subStatus) return false;
+    if (isPremium) return !subStatus.hasActivePlan;
+    // Free tier: locked if quota exhausted
+    return subStatus.freeTemplatesLimit > 0 && subStatus.freeTemplatesUsed >= subStatus.freeTemplatesLimit;
+  })();
 
   return (
     <div
@@ -151,19 +163,31 @@ function TemplateCard({
           </div>
         )}
 
-        {/* Hover overlay */}
-        <div
-          className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300
-                     flex items-center justify-center"
-        >
-          <Button
-            size="sm"
-            className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
-                       transition-all duration-300 shadow-lg"
+        {/* Lock overlay for restricted templates */}
+        {isLocked && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+            <Lock className="h-7 w-7 text-white/90" />
+            <span className="text-white/90 text-xs font-semibold px-3 text-center">
+              {isPremium ? t('resume.upgradeForPremium') : t('resume.freeTemplateLimitReached')}
+            </span>
+          </div>
+        )}
+
+        {/* Hover overlay (only when not locked) */}
+        {!isLocked && (
+          <div
+            className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300
+                       flex items-center justify-center"
           >
-            {t('resume.useTemplate')}
-          </Button>
-        </div>
+            <Button
+              size="sm"
+              className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
+                         transition-all duration-300 shadow-lg"
+            >
+              {t('resume.useTemplate')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -194,12 +218,17 @@ export default function TemplatesPage() {
   const session = loadSession();
 
   const [templates, setTemplates] = useState<ResumeTemplateDto[]>([]);
+  const [subStatus, setSubStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'free' | 'premium'>('all');
 
   useEffect(() => {
-    getTemplates({ pageSize: 50, isActive: true })
-      .then((res) => setTemplates(res.items ?? []))
+    const templatesPromise = getTemplates({ pageSize: 50, isActive: true })
+      .then((res) => setTemplates(res.items ?? []));
+    const statusPromise = session
+      ? getMySubscriptionStatus().then(setSubStatus).catch(() => null)
+      : Promise.resolve();
+    Promise.all([templatesPromise, statusPromise])
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -229,6 +258,26 @@ export default function TemplatesPage() {
               </Button>
             )}
           </div>
+
+          {/* Free template usage banner */}
+          {subStatus && !subStatus.hasActivePlan && subStatus.freeTemplatesLimit > 0 && (
+            <div className={`mt-4 px-3 py-2 rounded-lg text-xs flex items-center gap-2 ${
+              subStatus.freeTemplatesUsed >= subStatus.freeTemplatesLimit
+                ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                : 'bg-muted text-muted-foreground border border-border'
+            }`}>
+              <Lock className="h-3 w-3 flex-shrink-0" />
+              {subStatus.freeTemplatesUsed >= subStatus.freeTemplatesLimit
+                ? t('resume.freeTemplateLimitReached')
+                : `${subStatus.freeTemplatesUsed}/${subStatus.freeTemplatesLimit} ${t('resume.freeTemplatesUsed')}`}
+              <button
+                onClick={() => navigate('/settings/subscription')}
+                className="ml-auto underline underline-offset-2 hover:text-foreground"
+              >
+                {t('resume.upgrade')}
+              </button>
+            </div>
+          )}
 
           {/* Filter tabs */}
           <div className="flex items-center gap-2 mt-5">
@@ -271,6 +320,7 @@ export default function TemplatesPage() {
                 <TemplateCard
                   key={tmpl.id}
                   template={tmpl}
+                  subStatus={subStatus}
                   onClick={() => navigate(`/templates/${tmpl.id}`)}
                 />
               ))}

@@ -72,7 +72,7 @@ export default function SageGreenTemplate({ data }: Props) {
         {education.length > 0 && (
           <SideBlock title="Education">
             {education.map((item) => (
-              <div key={item.id} style={{ marginBottom: '12px' }}>
+              <div key={item.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div style={{ fontWeight: 700, fontSize: '10px', color: '#fff' }}>
                   {[item.degree, item.field].filter(Boolean).join(', ')}
                 </div>

@@ -119,7 +119,7 @@ export default function MercuryTemplate({ data }: Props) {
       {education.length > 0 && (
         <Section title="Education">
           {education.map((item) => (
-            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
+            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ width: '90px', flexShrink: 0, fontSize: '9px', color: '#777', fontFamily: 'Arial, sans-serif', lineHeight: '1.6', paddingTop: '1px' }}>
                 <div>{item.startDate}{item.startDate && ' –'}</div>
                 <div>{item.current ? 'present' : item.endDate}</div>

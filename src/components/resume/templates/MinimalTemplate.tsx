@@ -82,7 +82,7 @@ export default function MinimalTemplate({ data }: Props) {
       {education.length > 0 && (
         <MinSection title="Education">
           {education.map((item) => (
-            <div key={item.id} style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px' }}>
+            <div key={item.id} style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{item.school}</div>
                 <div style={{ color: '#666' }}>{[item.degree, item.field].filter(Boolean).join(', ')}</div>

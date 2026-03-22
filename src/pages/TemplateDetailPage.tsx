@@ -53,6 +53,10 @@ export default function TemplateDetailPage() {
       });
       navigate(`/resumes/${resume.id}/edit`);
     } catch (e: any) {
+      if (e?.status === 403) {
+        navigate('/settings/subscription');
+        return;
+      }
       const msg = e?.message || 'Failed to create resume';
       setError(msg);
       console.error(e);

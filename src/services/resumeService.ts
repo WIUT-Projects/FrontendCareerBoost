@@ -85,7 +85,11 @@ export async function createResume(
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Failed to create resume');
+  if (!res.ok) {
+    const err = new Error('Failed to create resume') as any;
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 }
 

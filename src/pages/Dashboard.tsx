@@ -10,7 +10,17 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getMySubscriptionStatus } from '@/services/subscriptionService';
+import { getMySubscriptionStatus, SubscriptionPlanType } from '@/services/subscriptionService';
+
+// Helper to convert enum to readable string
+function getPlanTypeName(planType: SubscriptionPlanType): string {
+  const names: Record<SubscriptionPlanType, string> = {
+    [SubscriptionPlanType.Free]: 'Free',
+    [SubscriptionPlanType.Pro]: 'Pro',
+    [SubscriptionPlanType.Business]: 'Business',
+  };
+  return names[planType] || 'Free';
+}
 
 // ── mock recent resumes ──────────────────────────────────────────────────────
 const RECENT_RESUMES = [
@@ -50,7 +60,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     getMySubscriptionStatus()
-      .then((s) => setCurrentPlan(s.planName))
+      .then((s) => setCurrentPlan(getPlanTypeName(s.planType)))
       .catch(() => null);
   }, []);
 

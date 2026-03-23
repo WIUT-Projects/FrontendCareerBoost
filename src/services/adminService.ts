@@ -97,3 +97,28 @@ export async function updateTemplate(id: number, payload: UpdateTemplatePayload)
   if (!res.ok) throw new Error(`Failed to update template: ${res.status}`);
   return res.json();
 }
+
+// ── AI Usage ───────────────────────────────────────────────────────────────
+
+export interface ModelStats {
+  count: number;
+  tokensInput: number;
+  tokensOutput: number;
+  costUsd: number;
+}
+
+export interface AdminAiUsageStats {
+  totalAnalyses: number;
+  totalTokensInput: number;
+  totalTokensOutput: number;
+  totalCostUsd: number;
+  byModel: Record<string, ModelStats>;
+}
+
+export async function getAiUsageStats(token: string): Promise<AdminAiUsageStats> {
+  const res = await fetch(`${API_URL}/api/admin/ai-usage/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch AI usage stats');
+  return res.json();
+}

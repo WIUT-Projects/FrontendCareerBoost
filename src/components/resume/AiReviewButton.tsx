@@ -1,4 +1,4 @@
-import { Lock, Sparkles } from 'lucide-react';
+import { Lock, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { CSSProperties, MouseEventHandler } from 'react';
 
@@ -44,6 +44,10 @@ const CSS = `
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 `;
 
 let injected = false;
@@ -60,6 +64,8 @@ interface AiReviewButtonProps {
   onClick?: () => void;
   /** When true, renders a locked upgrade prompt instead of the AI button */
   locked?: boolean;
+  /** When true, shows loading spinner and disables interaction */
+  loading?: boolean;
   /** 'full' = icon + text (default), 'icon' = icon only (mobile) */
   variant?: 'full' | 'icon';
   /** sm fits in a tight toolbar strip, md is the default */
@@ -70,6 +76,7 @@ interface AiReviewButtonProps {
 export function AiReviewButton({
   onClick,
   locked = false,
+  loading = false,
   variant = 'full',
   size = 'sm',
 }: AiReviewButtonProps) {
@@ -131,7 +138,7 @@ export function AiReviewButton({
     gap: '6px',
     borderRadius: isIcon ? '6px' : '9px',
     border: 'none',
-    cursor: 'pointer',
+    cursor: loading ? 'not-allowed' : 'pointer',
     padding: isIcon
       ? '4px'
       : isSm
@@ -145,6 +152,8 @@ export function AiReviewButton({
     whiteSpace: 'nowrap',
     transition: 'transform .15s ease',
     animation: 'ai-glow 3.2s ease-in-out infinite',
+    opacity: loading ? 0.8 : 1,
+    pointerEvents: loading ? 'none' : 'auto',
     /* layered gradient: dark base + animated overlay */
     background: 'linear-gradient(135deg, #5b21b6 0%, #4338ca 45%, #1d4ed8 100%)',
   };
@@ -213,17 +222,30 @@ export function AiReviewButton({
           </>
         )}
 
-        {/* ── Sparkle icon ── */}
-        <Sparkles
-          aria-hidden="true"
-          style={{
-            width: isIcon ? 15 : 14,
-            height: isIcon ? 15 : 14,
-            flexShrink: 0,
-            animation: 'ai-icon 4s ease-in-out infinite',
-            filter: 'drop-shadow(0 0 3px rgba(255,255,255,.6))',
-          }}
-        />
+        {/* ── Icon (spinner or sparkles) ── */}
+        {loading ? (
+          <Loader2
+            aria-hidden="true"
+            style={{
+              width: isIcon ? 15 : 14,
+              height: isIcon ? 15 : 14,
+              flexShrink: 0,
+              animation: 'spin 1s linear infinite',
+              filter: 'drop-shadow(0 0 3px rgba(255,255,255,.6))',
+            }}
+          />
+        ) : (
+          <Sparkles
+            aria-hidden="true"
+            style={{
+              width: isIcon ? 15 : 14,
+              height: isIcon ? 15 : 14,
+              flexShrink: 0,
+              animation: 'ai-icon 4s ease-in-out infinite',
+              filter: 'drop-shadow(0 0 3px rgba(255,255,255,.6))',
+            }}
+          />
+        )}
 
         {/* ── Label ── */}
         {!isIcon && (

@@ -3,6 +3,12 @@ import { loadSession } from './authService';
 const API_URL = import.meta.env.VITE_API_URL;
 const PLANS_PATH = import.meta.env.VITE_API_SUBSCRIPTION_PLANS;
 
+export enum SubscriptionPlanType {
+  Free = 0,
+  Pro = 1,
+  Business = 2,
+}
+
 function authHeaders() {
   const session = loadSession();
   return {
@@ -31,7 +37,7 @@ export async function getSubscriptionPlans(): Promise<SubscriptionPlanDto[]> {
 }
 
 export interface SubscriptionStatus {
-  planName: string;
+  planType: SubscriptionPlanType;
   aiAnalysisEnabled: boolean;
   hrReviewEnabled: boolean;
   freeTemplatesLimit: number; // 1 for free plan; 0 = unlimited

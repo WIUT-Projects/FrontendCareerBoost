@@ -10,7 +10,7 @@ export const ResumePreviewPage = () => <PlaceholderPage icon={FileText} title="R
 export const ResumeAnalysisPage = () => <AiPageWrapper><PlaceholderPage icon={Brain} title="AI Analysis Results" description="View AI-powered analysis scores and improvement suggestions." /></AiPageWrapper>;
 export { default as TemplatesPage } from './TemplatesPage';
 export { default as TemplateDetailPage } from './TemplateDetailPage';
-export const AiAnalysisPage = () => <AiPageWrapper><PlaceholderPage icon={Brain} title="AI Analysis" description="Run AI-powered analysis on your resumes to improve your chances." /></AiPageWrapper>;
+export { default as AiAnalysisPage } from './AiAnalysisPage';
 export { default as HrDirectoryPage } from './HrDirectoryPage';
 export { default as HrProfilePage } from './HrProfilePage';
 export const HrBookPage = () => <PlaceholderPage icon={Calendar} title="Book Interview" description="Select a time slot and book your session with this HR expert." />;
@@ -49,7 +49,7 @@ export const AdminResumesPage = () => <PlaceholderPage icon={FileText} title="Re
 export { default as AdminTemplatesPage } from './admin/AdminTemplatesPage';
 export { default as AdminReportsPage } from './admin/AdminReportsPage';
 export const AdminPaymentsPage = () => <PlaceholderPage icon={CreditCard} title="Payment Management" description="View all payments and issue refunds." />;
-export const AdminAiUsagePage = () => <AiPageWrapper><PlaceholderPage icon={Brain} title="AI Usage Logs" description="AI token usage and cost breakdown by model." /></AiPageWrapper>;
+export { default as AdminAiUsagePage } from './admin/AdminAiUsagePage';
 export const AdminRevenuePage = () => <PlaceholderPage icon={BarChart3} title="Revenue Snapshots" description="Daily revenue charts, tables, and CSV export." />;
 export const AdminAuditLogPage = () => <PlaceholderPage icon={ScrollText} title="Audit Log" description="Full audit log of all admin actions." />;
 export { default as AdminHrVerificationPage } from './admin/AdminHrVerificationPage';

@@ -53,8 +53,8 @@ export async function getHrExperts(params?: {
   const q = new URLSearchParams();
   if (params?.search)         q.set('search', params.search);
   if (params?.specialization) q.set('specialization', params.specialization);
-  if (params?.pageIndex)      q.set('pageIndex', String(params.pageIndex));
-  if (params?.pageSize)       q.set('pageSize', String(params.pageSize));
+  if (params?.pageIndex !== undefined) q.set('pageIndex', String(params.pageIndex));
+  if (params?.pageSize  !== undefined) q.set('pageSize',  String(params.pageSize));
 
   const res = await fetch(`${API_URL}/api/hr-experts?${q}`);
   if (!res.ok) throw new Error('Failed to load HR experts');

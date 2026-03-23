@@ -24,7 +24,7 @@ import {
   InboxPage, ChatPage, NotificationsPage,
   ProfileSettingsPage, SubscriptionPage, BillingPage, DangerZonePage,
   HrPortalDashboard, HrReviewsPage, HrReviewDetailPage, HrAvailabilityPage,
-  HrProfileEditPage, HrRatingsPage, HrJobListingsPage, HrApplicantsPage,
+  HrProfileEditPage, HrRatingsPage, HrJobListingsPage, HrApplicantsPage, HrInterviewsPage,
   AdminDashboard, AdminUsersPage, AdminResumesPage, AdminTemplatesPage,
   AdminReportsPage, AdminPaymentsPage, AdminAiUsagePage, AdminRevenuePage,
   AdminAuditLogPage, AdminHrVerificationPage,
@@ -97,6 +97,7 @@ const App = () => (
                   <Route path="/hr-portal" element={<HrPortalDashboard />} />
                   <Route path="/hr-portal/reviews" element={<HrReviewsPage />} />
                   <Route path="/hr-portal/reviews/:id" element={<HrReviewDetailPage />} />
+                  <Route path="/hr-portal/interviews" element={<HrInterviewsPage />} />
                   <Route path="/hr-portal/availability" element={<HrAvailabilityPage />} />
                   <Route path="/hr-portal/profile" element={<HrProfileEditPage />} />
                   <Route path="/hr-portal/ratings" element={<HrRatingsPage />} />

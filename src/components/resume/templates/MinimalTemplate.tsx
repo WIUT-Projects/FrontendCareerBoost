@@ -75,7 +75,7 @@ export default function MinimalTemplate({ data }: Props) {
       {experience.length > 0 && (
         <MinSection title="Experience">
           {experience.map((item) => (
-            <div key={item.id} style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px' }}>
+            <div key={item.id} style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{item.position}</div>
                 <div style={{ color: '#666' }}>{item.company}</div>
@@ -99,7 +99,7 @@ export default function MinimalTemplate({ data }: Props) {
       {projects.length > 0 && (
         <MinSection title="Projects">
           {projects.map((item) => (
-            <div key={item.id} style={{ marginBottom: '12px' }}>
+            <div key={item.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                 <span style={{ fontWeight: 600 }}>{item.name}</span>
                 {item.technologies.length > 0 && (

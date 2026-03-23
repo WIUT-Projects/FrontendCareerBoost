@@ -166,7 +166,7 @@ export default function AtlanticBlueTemplate({ data }: Props) {
         {experience.length > 0 && (
           <MainSection title="Work Experience">
             {experience.map((item) => (
-              <div key={item.id} style={{ marginBottom: '16px' }}>
+              <div key={item.id} style={{ marginBottom: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div style={{ fontWeight: 700, fontSize: '11px', color: '#111' }}>{item.position}</div>
                 {item.company && (
                   <div style={{ fontSize: '10px', color: '#1a2744', fontWeight: 600, marginBottom: '2px' }}>

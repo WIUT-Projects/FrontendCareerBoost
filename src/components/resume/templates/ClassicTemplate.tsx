@@ -64,7 +64,7 @@ export default function ClassicTemplate({ data }: Props) {
       {experience.length > 0 && (
         <SectionBlock title="Experience">
           {experience.map((item) => (
-            <div key={item.id} style={{ marginBottom: '14px' }}>
+            <div key={item.id} style={{ marginBottom: '14px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <strong style={{ fontSize: '12px' }}>{item.position}</strong>
                 <span style={{ color: '#666', fontSize: '10px' }}>
@@ -88,7 +88,7 @@ export default function ClassicTemplate({ data }: Props) {
       {projects.length > 0 && (
         <SectionBlock title="Projects">
           {projects.map((item) => (
-            <div key={item.id} style={{ marginBottom: '12px' }}>
+            <div key={item.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                 <strong style={{ fontSize: '12px' }}>{item.name}</strong>
                 {item.url && <span style={{ color: '#666', fontSize: '10px' }}>{item.url}</span>}

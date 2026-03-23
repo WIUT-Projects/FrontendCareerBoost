@@ -5,18 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
   ArrowLeft, ShieldCheck, Star, Briefcase, Clock,
-  MessageSquare, CalendarPlus, Loader2,
+  MessageSquare, CalendarPlus, Loader2, CheckCircle2,
 } from 'lucide-react';
 import {
   getHrExpertById, bookHrExpert,
@@ -24,7 +18,7 @@ import {
   type HrExpertItem,
 } from '@/services/hrExpertService';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { cn, resolveMediaUrl } from '@/lib/utils';
 import { toast } from 'sonner';
 
 // ─── Rating stars ─────────────────────────────────────────────────────────────
@@ -76,7 +70,6 @@ const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
 function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
   const { session } = useAuth();
-  const { t } = useTranslation();
 
   const [date,     setDate]     = useState('');
   const [time,     setTime]     = useState('');
@@ -84,44 +77,26 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
   const [notes,    setNotes]    = useState('');
   const [loading,  setLoading]  = useState(false);
 
-  // Reset form on open
   useEffect(() => {
-    if (open) {
-      setDate('');
-      setTime('');
-      setDuration('60');
-      setNotes('');
-    }
+    if (open) { setDate(''); setTime(''); setDuration('60'); setNotes(''); }
   }, [open]);
 
-  // Minimum date = today
   const today = new Date().toISOString().split('T')[0];
 
+  const durationLabel = (d: number) =>
+    d < 60 ? `${d}m` : `${Math.floor(d / 60)}h${d % 60 ? ` ${d % 60}m` : ''}`;
+
   const handleBook = async () => {
-    if (!date || !time) {
-      toast.error('Please select a date and time');
-      return;
-    }
-
+    if (!date || !time) { toast.error('Please select a date and time'); return; }
     const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
-    const now = new Date();
-    if (new Date(scheduledAt) <= now) {
-      toast.error('Scheduled time must be in the future');
-      return;
-    }
-
-    if (!session?.access_token) {
-      toast.error('You must be logged in to book a session');
-      return;
-    }
-
+    if (new Date(scheduledAt) <= new Date()) { toast.error('Scheduled time must be in the future'); return; }
+    if (!session?.access_token) { toast.error('You must be logged in'); return; }
     setLoading(true);
     try {
       await bookHrExpert(session.access_token, {
-        hrExpertId:      expert.id,
-        scheduledAt,
+        hrExpertId: expert.id, scheduledAt,
         durationMinutes: parseInt(duration),
-        notes:           notes.trim() || undefined,
+        notes: notes.trim() || undefined,
       });
       toast.success('Session booked successfully!');
       onSuccess();
@@ -132,97 +107,113 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
     }
   };
 
+  const initials = expert.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) ?? 'HR';
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarPlus className="h-5 w-5 text-primary" />
-            Book a Session
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[480px] gap-0 p-0 rounded-2xl shadow-2xl">
 
-        {/* Expert mini card */}
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border">
-          <Avatar className="h-10 w-10 shrink-0">
-            {expert.avatarUrl && <AvatarImage src={expert.avatarUrl} alt={expert.fullName ?? ''} />}
-            <AvatarFallback className="bg-primary/20 text-primary font-bold text-xs">
-              {expert.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) ?? 'HR'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="font-medium text-sm truncate">{expert.fullName ?? 'HR Expert'}</p>
-            <p className="text-xs text-muted-foreground truncate">{expert.headline ?? 'HR Professional'}</p>
+        {/* ── Title bar ── */}
+        <div className="flex items-center gap-2.5 px-5 pt-5 pb-4 border-b">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <CalendarPlus className="h-4 w-4 text-primary" />
           </div>
-          <div className="ml-auto shrink-0 text-right">
-            <p className="text-sm font-semibold text-primary">{formatPrice(expert.reviewPriceUzs)}</p>
-          </div>
+          <span className="font-semibold text-base">Book a Session</span>
         </div>
 
-        {/* Form fields */}
-        <div className="space-y-4">
+        <div className="px-5 pt-4 pb-5 space-y-4">
+
+          {/* ── Expert banner ── */}
+          <div className="rounded-xl border bg-muted/20 p-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary/15">
+                {expert.avatarUrl && <AvatarImage src={resolveMediaUrl(expert.avatarUrl)} alt={expert.fullName ?? ''} />}
+                <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm truncate">{expert.fullName ?? 'HR Expert'}</p>
+                <p className="text-xs text-muted-foreground truncate">{expert.headline ?? 'HR Professional'}</p>
+              </div>
+            </div>
+            <div className="mt-2.5 pt-2.5 border-t flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Session price</span>
+              <span className="text-sm font-bold text-primary">{formatPrice(expert.reviewPriceUzs)}</span>
+            </div>
+          </div>
+
+          {/* ── Date & Time ── */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="book-date" className="text-xs font-medium">Date</Label>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Date</p>
               <Input
-                id="book-date"
                 type="date"
                 min={today}
                 value={date}
                 onChange={e => setDate(e.target.value)}
+                className="h-10 text-sm rounded-xl w-full"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="book-time" className="text-xs font-medium">Time</Label>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Time</p>
               <Input
-                id="book-time"
                 type="time"
                 value={time}
                 onChange={e => setTime(e.target.value)}
+                className="h-10 text-sm rounded-xl w-full"
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="book-duration" className="text-xs font-medium">Duration</Label>
-            <Select value={duration} onValueChange={setDuration}>
-              <SelectTrigger id="book-duration">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DURATION_OPTIONS.map(d => (
-                  <SelectItem key={d} value={String(d)}>
-                    {d < 60 ? `${d} min` : `${d / 60}h${d % 60 ? ` ${d % 60}min` : ''}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* ── Duration pills ── */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Duration</p>
+            <div className="grid grid-cols-5 gap-1.5">
+              {DURATION_OPTIONS.map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDuration(String(d))}
+                  className={cn(
+                    'py-2 rounded-lg text-xs font-semibold border transition-all',
+                    duration === String(d)
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted/60 hover:text-foreground'
+                  )}
+                >
+                  {durationLabel(d)}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {/* ── Notes ── */}
           <div className="space-y-1.5">
-            <Label htmlFor="book-notes" className="text-xs font-medium">
-              Notes <span className="text-muted-foreground font-normal">(optional)</span>
-            </Label>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Notes <span className="normal-case font-normal text-muted-foreground/70">(optional)</span>
+            </p>
             <Textarea
-              id="book-notes"
               placeholder="Tell the expert what you'd like to focus on..."
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
-              className="resize-none text-sm"
+              className="resize-none text-sm rounded-xl"
             />
+          </div>
+
+          {/* ── Footer ── */}
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1 rounded-xl h-10">
+              Cancel
+            </Button>
+            <Button onClick={handleBook} disabled={loading} className="flex-[2] rounded-xl h-10 gap-2 font-semibold">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {loading ? 'Booking…' : 'Confirm Booking'}
+            </Button>
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button onClick={handleBook} disabled={loading} className="gap-1.5">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
-            Confirm Booking
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -316,7 +307,7 @@ export default function HrProfilePage() {
             {/* Avatar row */}
             <div className="flex items-end justify-between -mt-10 mb-4">
               <Avatar className="h-20 w-20 ring-4 ring-background shrink-0">
-                {expert.avatarUrl && <AvatarImage src={expert.avatarUrl} alt={expert.fullName ?? ''} />}
+                {expert.avatarUrl && <AvatarImage src={resolveMediaUrl(expert.avatarUrl)} alt={expert.fullName ?? ''} />}
                 <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary/40 text-primary-foreground font-bold text-xl">
                   {initials}
                 </AvatarFallback>

@@ -211,16 +211,47 @@ export default function ResumeEditPage() {
       // Give the browser one animation frame to perform layout on the clone
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
-      const fullHeight = captureEl.scrollHeight; // full content height, no clipping
+      // Measure the template's top padding so we can replicate it on continuation pages.
+      // captureEl > clone (pdfRef div) > template root div
+      const templateRoot = captureEl.firstElementChild?.firstElementChild as HTMLElement | null;
+      const rawPaddingTopDom = templateRoot
+        ? parseFloat(getComputedStyle(templateRoot).paddingTop) || 0
+        : 0;
 
-      // --- Step 2: capture ---
+      const fullHeight   = captureEl.scrollHeight;
+      const captureWidth = captureEl.offsetWidth; // should be 794px
+
+      // --- Step 2: measure DOM positions of "no-split" blocks BEFORE capturing ---
+      // html2canvas scale=2 so canvas pixels = DOM pixels × 2
+      const SCALE = 2;
+      const captureRect = captureEl.getBoundingClientRect();
+
+      // a4PageH in DOM pixels (pre-scale), used for block filtering
+      const a4PageHDom = Math.round((297 / 210) * captureWidth);
+
+      // Collect every element marked as break-inside:avoid
+      const safeBlocksDom: Array<{ top: number; bottom: number }> = [];
+      captureEl.querySelectorAll<HTMLElement>('div').forEach(el => {
+        const s = el.style;
+        if (s.breakInside === 'avoid' || s.pageBreakInside === 'avoid') {
+          const r   = el.getBoundingClientRect();
+          const top = r.top    - captureRect.top;
+          const bot = r.bottom - captureRect.top;
+          // Only track blocks smaller than 85 % of one page (otherwise unsplittable anyway)
+          if (bot > top && (bot - top) < a4PageHDom * 0.85) {
+            safeBlocksDom.push({ top, bottom: bot });
+          }
+        }
+      });
+
+      // --- Step 3: capture full-height canvas ---
       const canvas = await html2canvas(captureEl, {
-        scale: 2,
+        scale: SCALE,
         useCORS: true,
         logging: false,
-        windowWidth: 794,        // 210 mm at 96 dpi — matches template width
-        windowHeight: fullHeight, // virtual window tall enough for all content
-        height: fullHeight,
+        windowWidth:  captureWidth,
+        windowHeight: fullHeight,
+        height:       fullHeight,
         scrollX: 0,
         scrollY: 0,
       });
@@ -228,37 +259,82 @@ export default function ResumeEditPage() {
       // Clean up the temporary DOM node immediately after capture
       document.body.removeChild(captureEl);
 
-      // --- Step 3: slice canvas into A4 pages ---
+      // --- Step 4: calculate smart (block-aware) page break positions ---
       const PAGE_W_MM = 210;
       const PAGE_H_MM = 297;
-      // canvas.width == 794 * scale == 1588 px  →  represents 210 mm
-      // one A4 page height in canvas pixels:
+      // Convert DOM-pixel blocks to canvas-pixel blocks
+      const safeBlocks = safeBlocksDom.map(b => ({
+        top:    b.top    * SCALE,
+        bottom: b.bottom * SCALE,
+      }));
+
       const a4PageHPx = Math.round((PAGE_H_MM / PAGE_W_MM) * canvas.width);
 
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      let yOffset = 0;
-      let pageIdx = 0;
+      // For pages 2+, we'll prepend a top-margin strip matching the template's own padding,
+      // so the continuation pages look identical in spacing to page 1.
+      const topMarginCanvasPx = Math.round(rawPaddingTopDom * SCALE);
+      // Capacity for a continuation page is reduced by that top margin
+      const contPageCapacity  = Math.max(
+        a4PageHPx - topMarginCanvasPx,
+        Math.round(a4PageHPx * 0.5),  // never shrink below 50 % of A4 height
+      );
 
-      while (yOffset < canvas.height) {
-        if (pageIdx > 0) pdf.addPage();
+      // Build list of {start, end} slices that respect block boundaries
+      const slices: Array<{ start: number; end: number }> = [];
+      let currentY     = 0;
+      let isFirstSlice = true;
 
-        const sliceH = Math.min(a4PageHPx, canvas.height - yOffset);
+      while (currentY < canvas.height) {
+        const pageCapacity = isFirstSlice ? a4PageHPx : contPageCapacity;
+        let breakAt = currentY + pageCapacity;
 
-        const tmp = document.createElement('canvas');
-        tmp.width  = canvas.width;
-        tmp.height = sliceH;
-        const ctx = tmp.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        if (breakAt >= canvas.height) {
+          // Last (possibly partial) page
+          slices.push({ start: currentY, end: canvas.height });
+          break;
         }
 
-        // sliceH canvas-px → mm (canvas.width = 210 mm)
-        const sliceHeightMm = (sliceH / canvas.width) * PAGE_W_MM;
-        pdf.addImage(tmp.toDataURL('image/png'), 'PNG', 0, 0, PAGE_W_MM, sliceHeightMm);
+        // Move break point UP if it falls inside a "safe" block
+        for (const block of safeBlocks) {
+          if (block.top < breakAt && block.bottom > breakAt) {
+            // This block straddles the cut line — move the cut to just before the block,
+            // but only if doing so leaves enough content on the current page (>20 %).
+            const candidate = block.top - 2;
+            if (candidate > currentY + pageCapacity * 0.2) {
+              breakAt = Math.min(breakAt, candidate);
+            }
+            // else: block starts too early, can't avoid the split — leave breakAt as-is
+          }
+        }
 
-        yOffset  += a4PageHPx;
-        pageIdx  += 1;
+        slices.push({ start: currentY, end: breakAt });
+        currentY     = breakAt;
+        isFirstSlice = false;
       }
+
+      // --- Step 5: build multi-page PDF ---
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      slices.forEach(({ start, end }, pageIdx) => {
+        if (pageIdx > 0) pdf.addPage();
+        const sliceH = end - start;
+        // Pages 2+: prepend a white strip of height = template top padding,
+        // so content doesn't start at the very edge of the paper.
+        const topPad = pageIdx === 0 ? 0 : topMarginCanvasPx;
+        const tmp    = document.createElement('canvas');
+        tmp.width    = canvas.width;
+        tmp.height   = topPad + sliceH;
+        const ctx    = tmp.getContext('2d');
+        if (ctx) {
+          if (topPad > 0) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, tmp.width, topPad);
+          }
+          ctx.drawImage(canvas, 0, start, canvas.width, sliceH, 0, topPad, canvas.width, sliceH);
+        }
+        const tmpHMm = (tmp.height / canvas.width) * PAGE_W_MM;
+        pdf.addImage(tmp.toDataURL('image/png'), 'PNG', 0, 0, PAGE_W_MM, tmpHMm);
+      });
 
       pdf.save(`${title || 'resume'}.pdf`);
     } finally {

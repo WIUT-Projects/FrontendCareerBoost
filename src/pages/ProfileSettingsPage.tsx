@@ -13,7 +13,7 @@ import {
   CheckCircle2, Circle, ShieldCheck, Sparkles,
 } from 'lucide-react';
 import * as authService from '@/services/authService';
-import { cn } from '@/lib/utils';
+import { cn, resolveMediaUrl } from '@/lib/utils';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '';
 
@@ -190,12 +190,11 @@ function Section({ icon: Icon, title, desc, children }: {
 
 // ─── Left navigation ──────────────────────────────────────────────────────────
 
-function SettingsNav({ active, onChange, isHr }: { active: string; onChange: (v: string) => void; isHr: boolean }) {
+function SettingsNav({ active, onChange }: { active: string; onChange: (v: string) => void }) {
   const { t } = useTranslation();
   const items = [
     { id: 'profile',  icon: User,       label: t('settings.tabProfile') },
     { id: 'security', icon: ShieldCheck, label: t('settings.tabSecurity') },
-    ...(isHr ? [{ id: 'hr', icon: Briefcase, label: t('settings.tabHrProfile') }] : []),
   ];
   return (
     <nav className="flex flex-col gap-1">
@@ -228,7 +227,7 @@ function ProfileContent() {
 
   const [fullName,  setFullName]  = useState(profile?.fullName ?? '');
   const [bio,       setBio]       = useState('');
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? '');
+  const [avatarUrl, setAvatarUrl] = useState(resolveMediaUrl(profile?.avatarUrl));
   const [uploading, setUploading] = useState(false);
   const [saving,    setSaving]    = useState(false);
 
@@ -620,7 +619,7 @@ export default function ProfileSettingsPage() {
             <div className="rounded-2xl border bg-card p-4 flex flex-col items-center text-center gap-3">
               <div className="h-16 w-16 rounded-2xl overflow-hidden ring-2 ring-primary/20 bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                 {profile?.avatarUrl
-                  ? <img src={profile.avatarUrl} alt={profile.fullName} className="h-full w-full object-cover" />
+                  ? <img src={resolveMediaUrl(profile.avatarUrl)} alt={profile.fullName ?? ''} className="h-full w-full object-cover" />
                   : <span className="text-primary-foreground text-xl font-bold">{initials}</span>
                 }
               </div>
@@ -632,14 +631,18 @@ export default function ProfileSettingsPage() {
             </div>
 
             {/* Nav */}
-            <SettingsNav active={tab} onChange={setTab} isHr={isHr} />
+            <SettingsNav active={tab} onChange={setTab} />
           </aside>
 
           {/* ─── Right content ─── */}
           <div className="flex-1 min-w-0">
-            {tab === 'profile'  && <ProfileContent />}
+            {tab === 'profile' && (
+              <div className="space-y-6">
+                <ProfileContent />
+                {isHr && <HrProfileContent />}
+              </div>
+            )}
             {tab === 'security' && <SecurityContent />}
-            {tab === 'hr'       && isHr && <HrProfileContent />}
           </div>
         </div>
       </div>

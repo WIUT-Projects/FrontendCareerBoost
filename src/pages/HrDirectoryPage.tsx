@@ -7,14 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Search, Star, ShieldCheck, Briefcase, Clock,
-  ChevronLeft, ChevronRight, MessageSquare, CalendarPlus,
+  Search, ShieldCheck, Briefcase, Clock,
+  Loader2, MessageSquare, CalendarPlus,
 } from 'lucide-react';
 import {
   getHrExperts, getSpecializationChips, formatPrice,
   type HrExpertItem,
 } from '@/services/hrExpertService';
-import { cn } from '@/lib/utils';
+import { cn, resolveMediaUrl } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 12;
@@ -61,7 +61,7 @@ function HrCard({ expert }: { expert: HrExpertItem }) {
         {/* Avatar + name + verified */}
         <div className="flex items-start gap-3">
           <Avatar className="h-14 w-14 ring-2 ring-primary/10 shrink-0">
-            {expert.avatarUrl && <AvatarImage src={expert.avatarUrl} alt={expert.fullName ?? ''} />}
+            {expert.avatarUrl && <AvatarImage src={resolveMediaUrl(expert.avatarUrl)} alt={expert.fullName ?? ''} />}
             <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary/40 text-primary-foreground font-bold">
               {initials}
             </AvatarFallback>
@@ -175,40 +175,61 @@ export default function HrDirectoryPage() {
 
   const [experts,       setExperts]       = useState<HrExpertItem[]>([]);
   const [totalCount,    setTotalCount]    = useState(0);
-  const [pageIndex,     setPageIndex]     = useState(1);
+  const [pageIndex,     setPageIndex]     = useState(1);   // 1-based (backend convention)
   const [loading,       setLoading]       = useState(true);
+  const [loadingMore,   setLoadingMore]   = useState(false);
+  const [hasMore,       setHasMore]       = useState(false);
   const [search,        setSearch]        = useState('');
   const [activeSearch,  setActiveSearch]  = useState('');
   const [specialFilter, setSpecialFilter] = useState('All');
 
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-
-  const load = useCallback(() => {
+  // Initial / filter-change load — always resets the list
+  useEffect(() => {
+    setPageIndex(1);
+    setExperts([]);
     setLoading(true);
     getHrExperts({
       search:         activeSearch || undefined,
       specialization: specialFilter === 'All' ? undefined : specialFilter,
-      pageIndex,
-      pageSize: PAGE_SIZE,
+      pageIndex:      1,
+      pageSize:       PAGE_SIZE,
     })
       .then(res => {
         setExperts(res.items);
         setTotalCount(res.totalCount);
+        setHasMore(1 * PAGE_SIZE < res.totalCount);
       })
       .catch(() => toast.error('Failed to load HR experts'))
       .finally(() => setLoading(false));
-  }, [activeSearch, specialFilter, pageIndex]);
+  }, [activeSearch, specialFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadMore = useCallback(async () => {
+    const next = pageIndex + 1;
+    setLoadingMore(true);
+    try {
+      const res = await getHrExperts({
+        search:         activeSearch || undefined,
+        specialization: specialFilter === 'All' ? undefined : specialFilter,
+        pageIndex:      next,
+        pageSize:       PAGE_SIZE,
+      });
+      setExperts(prev => [...prev, ...res.items]);
+      setTotalCount(res.totalCount);
+      setHasMore(next * PAGE_SIZE < res.totalCount);
+      setPageIndex(next);
+    } catch {
+      toast.error('Failed to load more experts');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [pageIndex, activeSearch, specialFilter]);
 
   const handleSearch = () => {
     setActiveSearch(search);
-    setPageIndex(1);
   };
 
   const handleSpecial = (s: string) => {
     setSpecialFilter(s);
-    setPageIndex(1);
   };
 
   return (
@@ -279,45 +300,19 @@ export default function HrDirectoryPage() {
           }
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-2">
+        {/* Load More */}
+        {hasMore && (
+          <div className="flex justify-center pt-2">
             <Button
-              variant="outline" size="icon"
-              disabled={pageIndex <= 1}
-              onClick={() => setPageIndex(p => p - 1)}
+              variant="outline"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="gap-2 min-w-32"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(p => p === 1 || p === totalPages || Math.abs(p - pageIndex) <= 1)
-              .reduce<(number | '...')[]>((acc, p, idx, arr) => {
-                if (idx > 0 && (arr[idx - 1] as number) + 1 < p) acc.push('...');
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((p, i) =>
-                p === '...'
-                  ? <span key={`dots-${i}`} className="px-1 text-muted-foreground text-sm">…</span>
-                  : (
-                    <Button
-                      key={p}
-                      variant={p === pageIndex ? 'default' : 'outline'}
-                      size="icon"
-                      className="w-9 h-9"
-                      onClick={() => setPageIndex(p as number)}
-                    >
-                      {p}
-                    </Button>
-                  )
-              )
-            }
-            <Button
-              variant="outline" size="icon"
-              disabled={pageIndex >= totalPages}
-              onClick={() => setPageIndex(p => p + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
+              {loadingMore
+                ? <><Loader2 className="h-4 w-4 animate-spin" />Loading...</>
+                : 'Load More'
+              }
             </Button>
           </div>
         )}

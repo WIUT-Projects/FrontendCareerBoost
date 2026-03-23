@@ -29,7 +29,7 @@ export default function BlogPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const PAGE_SIZE = 8;
+  const PAGE_SIZE = 9;
 
   useEffect(() => {
     getArticleCategories()
@@ -42,10 +42,10 @@ export default function BlogPage() {
     setArticles([]);
     setLoading(true);
     setError(null);
-    getArticles({ status: 'published', categoryId: selectedCategory ?? undefined, page: 1, pageSize: PAGE_SIZE })
+    getArticles({ status: 'published', categoryId: selectedCategory ?? undefined, pageIndex: 1, pageSize: PAGE_SIZE })
       .then((r) => {
         setArticles(r.items);
-        setHasMore(r.page * r.pageSize < r.totalCount);
+        setHasMore(1 * PAGE_SIZE < r.totalCount);
       })
       .catch(() => setError(t('blog.loadError')))
       .finally(() => setLoading(false));
@@ -55,9 +55,9 @@ export default function BlogPage() {
     const nextPage = page + 1;
     setLoadingMore(true);
     try {
-      const r = await getArticles({ status: 'published', categoryId: selectedCategory ?? undefined, page: nextPage, pageSize: PAGE_SIZE });
+      const r = await getArticles({ status: 'published', categoryId: selectedCategory ?? undefined, pageIndex: nextPage, pageSize: PAGE_SIZE });
       setArticles((prev) => [...prev, ...r.items]);
-      setHasMore(nextPage * r.pageSize < r.totalCount);
+      setHasMore(nextPage * PAGE_SIZE < r.totalCount);
       setPage(nextPage);
     } catch {
       // silent

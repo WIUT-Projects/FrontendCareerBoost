@@ -114,7 +114,7 @@ export default function MercuryTemplate({ data }: Props) {
       {experience.length > 0 && (
         <Section title="Work Experience">
           {experience.map((item) => (
-            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '14px' }}>
+            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '14px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               {/* Left: date + location */}
               <div style={{ width: '90px', flexShrink: 0, fontSize: '9px', color: '#777', fontFamily: 'Arial, sans-serif', lineHeight: '1.6', paddingTop: '1px' }}>
                 <div>{item.startDate}{item.startDate && ' –'}</div>
@@ -141,7 +141,7 @@ export default function MercuryTemplate({ data }: Props) {
       {projects.length > 0 && (
         <Section title="Projects">
           {projects.map((item) => (
-            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
+            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ width: '90px', flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>

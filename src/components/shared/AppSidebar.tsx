@@ -17,7 +17,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { resolveMediaUrl } from '@/lib/utils';
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -161,6 +162,7 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="w-full">
                   <Avatar className="h-7 w-7">
+                    {profile?.avatarUrl && <AvatarImage src={resolveMediaUrl(profile.avatarUrl)} alt={profile.fullName ?? ''} />}
                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                       {initials}
                     </AvatarFallback>

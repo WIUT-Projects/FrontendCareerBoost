@@ -69,8 +69,8 @@ export async function getArticles(params?: {
   categoryId?: number;
 }): Promise<PaginatedResult<ArticleDto>> {
   const query = new URLSearchParams();
-  if (params?.pageIndex) query.set('pageIndex', String(params.pageIndex));
-  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params?.pageIndex !== undefined) query.set('pageIndex', String(params.pageIndex));
+  if (params?.pageSize  !== undefined) query.set('pageSize',  String(params.pageSize));
   if (params?.status) query.set('status', params.status);
   if (params?.categoryId) query.set('categoryId', String(params.categoryId));
 

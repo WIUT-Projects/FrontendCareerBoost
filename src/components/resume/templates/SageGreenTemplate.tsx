@@ -110,7 +110,7 @@ export default function SageGreenTemplate({ data }: Props) {
         {experience.length > 0 && (
           <MainBlock title="Professional Experience" accent={ACCENT}>
             {experience.map((item) => (
-              <div key={item.id} style={{ marginBottom: '18px' }}>
+              <div key={item.id} style={{ marginBottom: '18px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '4px' }}>
                   <div style={{ fontWeight: 700, fontSize: '11.5px', color: '#1a1a1a' }}>
                     {item.position}
@@ -154,7 +154,7 @@ export default function SageGreenTemplate({ data }: Props) {
         {projects.length > 0 && (
           <MainBlock title="Projects & Awards" accent={ACCENT}>
             {projects.map((item) => (
-              <div key={item.id} style={{ marginBottom: '10px' }}>
+              <div key={item.id} style={{ marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div style={{ fontWeight: 700, fontSize: '10.5px', color: '#1a1a1a' }}>
                   {item.name}
                   {item.url && <span style={{ fontWeight: 400, fontSize: '9px', color: '#888', marginLeft: '6px' }}>{item.url}</span>}

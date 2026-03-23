@@ -28,6 +28,7 @@ interface BackendUserResponse {
   email: string;
   fullName: string | null;
   avatarUrl: string | null;
+  bio: string | null;
   role: string;
   subscriptionTier: string | null;
 }
@@ -79,6 +80,27 @@ export async function getMe(accessToken: string): Promise<BackendUserResponse> {
   return res.json() as Promise<BackendUserResponse>;
 }
 
+/** Email + password login for JobSeeker / HrExpert accounts. */
+export async function userLogin(
+  email: string,
+  password: string,
+): Promise<AuthTokens> {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    // Surface the backend's descriptive message (e.g. "created via Google")
+    const detail = (err as { detail?: string; title?: string });
+    throw new Error(detail.detail ?? detail.title ?? 'Login failed');
+  }
+
+  return res.json() as Promise<AuthTokens>;
+}
+
 export async function adminLogin(
   email: string,
   password: string
@@ -106,6 +128,101 @@ export async function refreshToken(token: string): Promise<AuthTokens> {
 
   if (!res.ok) throw new Error('Token refresh failed');
   return res.json() as Promise<AuthTokens>;
+}
+
+// ─── Profile / Password / HR Expert updates ──────────────────────────────────
+
+export interface UpdateProfileData {
+  fullName?: string;
+  bio?: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordData {
+  oldPassword?: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface UpdateHrExpertProfileData {
+  headline?: string;
+  specializations?: string;
+  yearsExp?: number;
+  reviewPriceUzs?: number;
+}
+
+export async function updateProfile(
+  accessToken: string,
+  data: UpdateProfileData,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/api/users/me/profile`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string; title?: string }).detail ?? 'Failed to update profile');
+  }
+}
+
+export async function changePassword(
+  accessToken: string,
+  data: ChangePasswordData,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/api/auth/change-password`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string; title?: string }).detail ?? 'Failed to change password');
+  }
+}
+
+export interface HrExpertProfileData {
+  headline?: string;
+  specializations?: string;
+  yearsExp?: number;
+  reviewPriceUzs?: number;
+  isVerified?: boolean;
+  avgRating?: number;
+  totalReviews?: number;
+}
+
+export async function getHrExpertProfile(
+  accessToken: string,
+): Promise<HrExpertProfileData | null> {
+  const res = await fetch(`${API_URL}/api/profile/hr-expert`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return null;
+  return res.json() as Promise<HrExpertProfileData | null>;
+}
+
+export async function updateHrExpertProfile(
+  accessToken: string,
+  data: UpdateHrExpertProfileData,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/api/profile/hr-expert`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string; title?: string }).detail ?? 'Failed to update HR profile');
+  }
 }
 
 // ─── Build session from tokens + backend user ────────────────────────────────

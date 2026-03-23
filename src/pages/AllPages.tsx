@@ -1,6 +1,6 @@
 import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
 import { AiPageWrapper } from '@/components/shared/AiPageWrapper';
-import { FileText, Palette, Brain, Users, Calendar, Briefcase, BookOpen, MessageSquare, Bell, Settings, Shield, Star, ClipboardList, BarChart3, CreditCard, UserCheck, ScrollText } from 'lucide-react';
+import { FileText, Palette, Brain, Users, Calendar, Briefcase, BookOpen, MessageSquare, Bell, Shield, Star, ClipboardList, BarChart3, CreditCard, UserCheck, ScrollText } from 'lucide-react';
 
 // JobSeeker pages
 export { default as ResumesPage } from './ResumesPage';
@@ -11,8 +11,8 @@ export const ResumeAnalysisPage = () => <AiPageWrapper><PlaceholderPage icon={Br
 export { default as TemplatesPage } from './TemplatesPage';
 export { default as TemplateDetailPage } from './TemplateDetailPage';
 export const AiAnalysisPage = () => <AiPageWrapper><PlaceholderPage icon={Brain} title="AI Analysis" description="Run AI-powered analysis on your resumes to improve your chances." /></AiPageWrapper>;
-export const HrDirectoryPage = () => <PlaceholderPage icon={Users} title="HR Expert Directory" description="Discover verified HR professionals for resume reviews and coaching." />;
-export const HrProfilePage = () => <PlaceholderPage icon={Users} title="HR Expert Profile" description="View this expert's full profile, ratings, and availability." />;
+export { default as HrDirectoryPage } from './HrDirectoryPage';
+export { default as HrProfilePage } from './HrProfilePage';
 export const HrBookPage = () => <PlaceholderPage icon={Calendar} title="Book Interview" description="Select a time slot and book your session with this HR expert." />;
 export const InterviewsPage = () => <PlaceholderPage icon={Calendar} title="My Interviews" description="View all your past and upcoming interview sessions." />;
 export const InterviewDetailPage = () => <PlaceholderPage icon={Calendar} title="Interview Detail" description="Full details about this interview session." />;
@@ -27,7 +27,7 @@ export const ChatPage = () => <PlaceholderPage icon={MessageSquare} title="Chat"
 export const NotificationsPage = () => <PlaceholderPage icon={Bell} title="Notifications" description="All your platform notifications and updates." />;
 
 // Settings pages
-export const ProfileSettingsPage = () => <PlaceholderPage icon={Settings} title="Profile Settings" description="Update your personal information and preferences." />;
+export { default as ProfileSettingsPage } from './ProfileSettingsPage';
 export { default as SubscriptionPage } from './Subscription';
 export const BillingPage = () => <PlaceholderPage icon={CreditCard} title="Billing History" description="View your payment history and download receipts." />;
 export const DangerZonePage = () => <PlaceholderPage icon={Shield} title="Danger Zone" description="Delete your account or revoke OAuth permissions." />;

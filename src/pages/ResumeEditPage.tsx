@@ -6,6 +6,7 @@ import {
   User, GraduationCap, Briefcase, FolderOpen, Code2, Languages,
 } from 'lucide-react';
 import { AiReviewButton } from '@/components/resume/AiReviewButton';
+import { AiAnalysisPanel } from '@/components/resume/AiAnalysisPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ResumeRenderer from '@/components/resume/ResumeRenderer';
@@ -16,6 +17,8 @@ import ProjectsForm from '@/components/resume/forms/ProjectsForm';
 import SkillsForm from '@/components/resume/forms/SkillsForm';
 import LanguagesForm from '@/components/resume/forms/LanguagesForm';
 import { getResumeById, upsertSection } from '@/services/resumeService';
+import { analyzeResume, getLatestAnalysis } from '@/services/aiService';
+import type { AiAnalysisResult } from '@/services/aiService';
 import { loadSession } from '@/services/authService';
 import type {
   ResumeDto, ResumeSectionDto, SectionType,
@@ -56,6 +59,37 @@ export default function ResumeEditPage() {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<SectionType>('overview');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // ── AI Analysis ──────────────────────────────────────────────────────────
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<AiAnalysisResult | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleAiReview = async () => {
+    if (!session || !id) return;
+    setAiPanelOpen(true);
+    setAnalyzing(true);
+    setAiError(null);
+    try {
+      const result = await analyzeResume(Number(id), session.accessToken);
+      setAiResult(result);
+    } catch (e: any) {
+      setAiError(e?.message ?? 'Analysis failed. Please try again.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // Load latest saved result when panel first opens (without re-running)
+  const aiPanelOpenedOnce = useRef(false);
+  useEffect(() => {
+    if (!aiPanelOpen || aiPanelOpenedOnce.current || !session || !id) return;
+    aiPanelOpenedOnce.current = true;
+    getLatestAnalysis(Number(id), session.accessToken)
+      .then((r) => { if (r) setAiResult(r); })
+      .catch(() => null);
+  }, [aiPanelOpen]);
 
   // Title editing
   const [title, setTitle] = useState('');
@@ -215,7 +249,7 @@ export default function ResumeEditPage() {
               <Download className="h-3.5 w-3.5" />
             </Button>
             <span className="lg:hidden flex-shrink-0">
-              <AiReviewButton variant="icon" size="sm" />
+              <AiReviewButton variant="icon" size="sm" onClick={handleAiReview} />
             </span>
           </div>
 
@@ -297,7 +331,7 @@ export default function ResumeEditPage() {
               <Download className="h-4 w-4" />
               {t('resume.download')}
             </Button>
-            <AiReviewButton size="sm" />
+            <AiReviewButton size="sm" onClick={handleAiReview} />
           </div>
 
           {/* Scrollable preview */}
@@ -318,6 +352,16 @@ export default function ResumeEditPage() {
           <ResumeRenderer sections={sections} templateId={resume.templateId} />
         </div>
       </div>
+
+      {/* AI Analysis drawer */}
+      <AiAnalysisPanel
+        open={aiPanelOpen}
+        onClose={() => setAiPanelOpen(false)}
+        onRerun={handleAiReview}
+        analyzing={analyzing}
+        result={aiResult}
+        error={aiError}
+      />
     </div>
   );
 }

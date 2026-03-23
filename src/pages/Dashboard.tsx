@@ -5,17 +5,47 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText, Palette, Brain, Users, Briefcase, Calendar,
   ArrowRight, Sparkles, Crown, MessageSquare, Zap, Target,
-  TrendingUp, Clock
+  TrendingUp, Clock, CheckCircle2, ChevronRight,
+  PenLine, UserCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getMySubscriptionStatus } from '@/services/subscriptionService';
 
+// ── mock recent resumes ──────────────────────────────────────────────────────
+const RECENT_RESUMES = [
+  { id: 1, title: 'Full Stack Developer Resume',   template: 'Classic',      score: 82, updated: '2d ago' },
+  { id: 2, title: 'Product Manager CV',            template: 'Atlantic Blue', score: 67, updated: '5d ago' },
+  { id: 3, title: 'UI/UX Designer Portfolio',      template: 'Mercury',      score: 91, updated: '1w ago' },
+];
+
+// ── score ring ───────────────────────────────────────────────────────────────
+function ScoreRing({ score }: { score: number }) {
+  const r = 22;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (score / 100) * circ;
+  const color = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
+  return (
+    <svg width="60" height="60" viewBox="0 0 60 60" className="flex-shrink-0 -rotate-90">
+      <circle cx="30" cy="30" r={r} fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/30" />
+      <circle cx="30" cy="30" r={r} fill="none" stroke={color} strokeWidth="4"
+        strokeDasharray={circ} strokeDashoffset={offset}
+        strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
+      <text x="30" y="34" textAnchor="middle" fontSize="13" fontWeight="700"
+        fill="currentColor" className="text-foreground"
+        style={{ transform: 'rotate(90deg)', transformOrigin: '30px 30px' }}>
+        {score}
+      </text>
+    </svg>
+  );
+}
+
+// ── main ─────────────────────────────────────────────────────────────────────
 const DashboardPage = () => {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const firstName = profile?.fullName?.split(' ')[0] || '';
+  const firstName = profile?.fullName?.split(' ')[0] || 'Foydalanuvchi';
   const [currentPlan, setCurrentPlan] = useState('Free');
 
   useEffect(() => {
@@ -24,180 +54,274 @@ const DashboardPage = () => {
       .catch(() => null);
   }, []);
 
-  const quickLinks = [
-    { icon: FileText, label: t('sidebar.myResumes'), url: '/resumes', count: 3 },
-    { icon: Briefcase, label: t('sidebar.jobs'), url: '/jobs', count: 128 },
-    { icon: Calendar, label: t('sidebar.interviews'), url: '/interviews', count: 2 },
-    { icon: MessageSquare, label: t('sidebar.messages'), url: '/messages', count: 5 },
-  ];
-
-  const tools = [
-    { icon: Palette, label: t('sidebar.templates'), desc: '50+ premium', url: '/templates' },
-    { icon: Users, label: t('sidebar.hrExperts'), desc: '24 experts', url: '/hr' },
-  ];
+  const isPro = currentPlan !== 'Free';
 
   return (
-    <div className="space-y-8">
-      {/* Hero welcome */}
-      <div className="relative overflow-hidden rounded-2xl border bg-card p-6 md:p-8">
-        <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 h-32 w-32 rounded-full bg-accent/20 blur-2xl" />
-        <div className="relative">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <h1 className="font-display text-xl md:text-2xl font-bold">
-              {t('dashboard.welcome', { name: firstName })}
-            </h1>
-            <Badge
-              variant="outline"
-              className="cursor-pointer border-primary/30 text-primary text-[10px] px-2 py-0 h-5 hover:bg-primary hover:text-primary-foreground transition-colors"
-              onClick={() => navigate('/settings/subscription')}
-            >
-              <Crown className="h-2.5 w-2.5 mr-0.5" />
-              {currentPlan}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">{t('dashboard.subtitle')}</p>
+    <div className="min-h-full bg-muted/30 py-6">
+      <div className="max-w-6xl mx-auto px-6 space-y-6">
 
-          {/* Quick stat pills */}
-          <div className="flex flex-wrap gap-2 mt-5">
-            {quickLinks.map((link) => (
-              <button
-                key={link.url}
-                onClick={() => navigate(link.url)}
-                className="group inline-flex items-center gap-2 rounded-full border bg-background/80 backdrop-blur-sm pl-1 pr-3.5 py-1 text-xs hover:border-primary/30 hover:bg-accent/50 transition-all"
-              >
-                <span className="h-6 w-6 rounded-full bg-accent flex items-center justify-center">
-                  <link.icon className="h-3 w-3 text-accent-foreground" />
-                </span>
-                <span className="font-medium">{link.label}</span>
-                <span className="text-muted-foreground font-mono">{link.count}</span>
-              </button>
-            ))}
+        {/* ── Hero ──────────────────────────────────────────────────────── */}
+        <div className="relative overflow-hidden rounded-2xl border bg-card">
+          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-primary/8 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-accent/15 blur-2xl pointer-events-none" />
+
+          <div className="relative px-6 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="font-display text-xl md:text-2xl font-bold">
+                  {t('dashboard.welcome', { name: firstName })} 👋
+                </h1>
+                <Badge
+                  variant="outline"
+                  className={`cursor-pointer text-[10px] px-2 py-0 h-5 transition-colors ${
+                    isPro
+                      ? 'border-amber-400/40 text-amber-500 hover:bg-amber-500 hover:text-white'
+                      : 'border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  onClick={() => navigate('/settings/subscription')}
+                >
+                  <Crown className="h-2.5 w-2.5 mr-0.5" />
+                  {currentPlan}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{t('dashboard.subtitle')}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[
+                { icon: FileText,      label: t('sidebar.myResumes'), url: '/resumes',    count: 3,   bg: 'bg-blue-500' },
+                { icon: Briefcase,     label: t('sidebar.jobs'),       url: '/jobs',       count: 128, bg: 'bg-violet-500' },
+                { icon: Calendar,      label: t('sidebar.interviews'), url: '/interviews', count: 2,   bg: 'bg-emerald-500' },
+                { icon: MessageSquare, label: t('sidebar.messages'),   url: '/messages',   count: 5,   bg: 'bg-amber-500' },
+              ].map((link) => (
+                <button
+                  key={link.url}
+                  onClick={() => navigate(link.url)}
+                  className="group inline-flex items-center gap-2 rounded-full border bg-background/80 backdrop-blur-sm pl-1 pr-3.5 py-1 text-xs hover:border-primary/30 hover:bg-accent/50 transition-all"
+                >
+                  <span className={`h-6 w-6 rounded-full ${link.bg} flex items-center justify-center`}>
+                    <link.icon className="h-3 w-3 text-white" />
+                  </span>
+                  <span className="font-medium">{link.label}</span>
+                  <span className="font-mono text-muted-foreground">{link.count}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* Left: AI tools */}
-        <div className="lg:col-span-3 space-y-4">
-          <div className="flex items-center gap-1.5">
-            <Zap className="h-3.5 w-3.5 text-primary" />
-            <h2 className="font-display text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Tools</h2>
-          </div>
+        {/* ── Main grid ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* AI Analysis card */}
-          <button
-            onClick={() => navigate('/ai-analysis')}
-            className="group w-full relative overflow-hidden rounded-xl border border-primary/15 p-5 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/15 opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/5 blur-2xl animate-[pulse_6s_ease-in-out_infinite]" />
-            <div className="relative flex items-start gap-4">
-              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/20">
-                <Brain className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display font-semibold text-sm">{t('sidebar.aiAnalysis')}</h3>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Get AI-powered scoring, keyword optimization & improvement tips for your resumes</p>
-                <div className="flex items-center gap-3 mt-3">
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-background/60 rounded-full px-2 py-0.5">
-                    <Target className="h-2.5 w-2.5" /> ATS Score
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-background/60 rounded-full px-2 py-0.5">
-                    <TrendingUp className="h-2.5 w-2.5" /> Suggestions
-                  </span>
-                </div>
-              </div>
-            </div>
-          </button>
+          {/* ── LEFT col ──────────────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-5">
 
-          {/* AI Optimizer card */}
-          <button
-            onClick={() => navigate('/ai-analysis')}
-            className="group w-full relative overflow-hidden rounded-xl border border-primary/15 p-5 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-transparent to-primary/10 opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
-            <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-accent/15 blur-2xl animate-[pulse_8s_ease-in-out_infinite_2s]" />
-            <div className="relative flex items-start gap-4">
-              <div className="h-10 w-10 rounded-xl bg-primary-dark flex items-center justify-center shrink-0 shadow-sm">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display font-semibold text-sm">AI Resume Optimizer</h3>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+            {/* Recent Resumes */}
+            <div className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <h2 className="font-display font-semibold text-sm">So'nggi resumelar</h2>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Auto-enhance content, fix grammar, and optimize for job descriptions</p>
-                <div className="flex items-center gap-3 mt-3">
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-background/60 rounded-full px-2 py-0.5">
-                    <Clock className="h-2.5 w-2.5" /> Instant
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-background/60 rounded-full px-2 py-0.5">
-                    <Sparkles className="h-2.5 w-2.5" /> Smart
-                  </span>
-                </div>
+                <button
+                  onClick={() => navigate('/resumes')}
+                  className="text-[11px] font-medium text-primary flex items-center gap-0.5 hover:underline"
+                >
+                  Barchasi <ChevronRight className="h-3 w-3" />
+                </button>
               </div>
-            </div>
-          </button>
-        </div>
-
-        {/* Right: Tools + Upgrade */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center gap-1.5">
-            <Target className="h-3.5 w-3.5 text-muted-foreground" />
-            <h2 className="font-display text-xs font-semibold uppercase tracking-wider text-muted-foreground">Explore</h2>
-          </div>
-
-          {tools.map((tool) => (
-            <button
-              key={tool.url}
-              onClick={() => navigate(tool.url)}
-              className="group w-full flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-sm hover:border-border/80"
-            >
-              <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                <tool.icon className="h-4 w-4 text-accent-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-display font-semibold text-sm">{tool.label}</h3>
-                <p className="text-[11px] text-muted-foreground">{tool.desc}</p>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ))}
-
-          {/* Upgrade card */}
-          {currentPlan === 'Free' && (
-            <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/10 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Crown className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-sm">Go Pro</h3>
-                  <p className="text-[11px] text-muted-foreground">$12/mo</p>
-                </div>
-              </div>
-              <ul className="space-y-1 mb-3">
-                {['Unlimited AI', 'HR reviews', 'Premium templates'].map((f) => (
-                  <li key={f} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                    <span className="h-1 w-1 rounded-full bg-primary" />
-                    {f}
-                  </li>
+              <div className="space-y-2">
+                {RECENT_RESUMES.map((r) => (
+                  <div
+                    key={r.id}
+                    onClick={() => navigate('/resumes')}
+                    className="group flex items-center gap-3 rounded-xl border bg-muted/30 hover:bg-accent/40 px-3.5 py-3 cursor-pointer transition-all"
+                  >
+                    <ScoreRing score={r.score} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{r.title}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 bg-background rounded-full px-2 py-0.5 border">
+                          <Palette className="h-2.5 w-2.5" /> {r.template}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-2.5 w-2.5" /> {r.updated}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate('/resumes'); }}
+                        className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-[11px] bg-background border rounded-lg px-2.5 py-1 hover:border-primary/40 transition-all"
+                      >
+                        <PenLine className="h-3 w-3" /> Edit
+                      </button>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
                 ))}
-              </ul>
-              <Button
-                size="sm"
-                onClick={() => navigate('/settings/subscription')}
-                className="w-full rounded-lg h-8 text-xs"
+              </div>
+              <button
+                onClick={() => navigate('/resumes')}
+                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
               >
-                View Plans <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
+                <PenLine className="h-3.5 w-3.5" /> Yangi resume yaratish
+              </button>
             </div>
-          )}
+
+            {/* AI Tools */}
+            <div className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="h-4 w-4 text-primary" />
+                <h2 className="font-display font-semibold text-sm">AI Vositalar</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                <button onClick={() => navigate('/ai-analysis')}
+                  className="group relative overflow-hidden rounded-xl border border-primary/20 p-4 text-left transition-all hover:border-primary/40 hover:shadow-md hover:shadow-primary/5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/10 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex flex-col gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-sm shadow-primary/20">
+                      <Brain className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">{t('sidebar.aiAnalysis')}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">AI orqali ATS balli, kalit so'zlar va tavsiyalar</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {['ATS Score', 'Suggestions'].map((tag) => (
+                        <span key={tag} className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </button>
+
+                <button onClick={() => navigate('/ai-analysis')}
+                  className="group relative overflow-hidden rounded-xl border border-violet-500/20 p-4 text-left transition-all hover:border-violet-500/40 hover:shadow-md hover:shadow-violet-500/5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/8 via-transparent to-indigo-500/10 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex flex-col gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-violet-600 flex items-center justify-center shadow-sm shadow-violet-600/20">
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">AI Optimizer</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Matnni yaxshilash, grammatika va vakansiyaga moslashtirish</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {['Instant', 'Smart'].map((tag) => (
+                        <span key={tag} className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </button>
+
+                <button onClick={() => navigate('/hr')}
+                  className="group relative overflow-hidden rounded-xl border border-emerald-500/20 p-4 text-left transition-all hover:border-emerald-500/40 hover:shadow-md hover:shadow-emerald-500/5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/8 via-transparent to-teal-500/10 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex flex-col gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-sm shadow-emerald-600/20">
+                      <UserCircle className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">HR Ekspert</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Professional HR mutaxassislaridan shaxsiy maslahat</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">24 ta ekspert</span>
+                      <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">★ 4.8</span>
+                    </div>
+                  </div>
+                </button>
+
+                <button onClick={() => navigate('/jobs')}
+                  className="group relative overflow-hidden rounded-xl border border-sky-500/20 p-4 text-left transition-all hover:border-sky-500/40 hover:shadow-md hover:shadow-sky-500/5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-500/8 via-transparent to-blue-500/10 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex flex-col gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-sky-600 flex items-center justify-center shadow-sm shadow-sky-600/20">
+                      <Briefcase className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Vakansiyalar</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Sizga mos ish o'rinlarini toping va ariza yuboring</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">128 ochiq</span>
+                    </div>
+                  </div>
+                </button>
+
+              </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT col ─────────────────────────────────────────────── */}
+          <div className="space-y-5">
+
+            {/* Explore */}
+            <div className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="h-4 w-4 text-muted-foreground" />
+                <h2 className="font-display font-semibold text-sm">Explore</h2>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { icon: Palette,    label: t('sidebar.templates'),  desc: '50+ premium shablon', url: '/templates',   color: 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600' },
+                  { icon: Users,      label: t('sidebar.hrExperts'),  desc: '24 ta ekspert',       url: '/hr',          color: 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600' },
+                  { icon: TrendingUp, label: t('sidebar.aiAnalysis'), desc: 'AI tahlil',           url: '/ai-analysis', color: 'bg-amber-100 dark:bg-amber-950/50 text-amber-600' },
+                ].map((tool) => (
+                  <button
+                    key={tool.url}
+                    onClick={() => navigate(tool.url)}
+                    className="group w-full flex items-center gap-3 rounded-xl border bg-muted/20 hover:bg-accent/40 px-3 py-2.5 text-left transition-all"
+                  >
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tool.color}`}>
+                      <tool.icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs">{tool.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Upgrade card (free users only) */}
+            {!isPro && (
+              <div className="relative overflow-hidden rounded-2xl border border-primary/20 p-5">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/10 pointer-events-none" />
+                <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
+                <div className="relative">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
+                      <Crown className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">Go Pro</p>
+                      <p className="text-[11px] text-muted-foreground">$12/oy dan</p>
+                    </div>
+                  </div>
+                  <ul className="space-y-1.5 mb-4">
+                    {['Cheksiz AI tahlil', 'Premium shablonlar', 'HR ekspert sessiyalari', 'Priority support'].map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/settings/subscription')}
+                    className="w-full rounded-xl h-8 text-xs"
+                  >
+                    Rejalarni ko'rish <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
     </div>

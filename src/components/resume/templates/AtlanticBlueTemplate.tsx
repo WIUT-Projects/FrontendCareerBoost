@@ -141,6 +141,27 @@ export default function AtlanticBlueTemplate({ data }: Props) {
       {/* ══ RIGHT MAIN ══ */}
       <div style={{ flex: 1, padding: '32px 28px' }}>
 
+        {/* Education */}
+        {education.length > 0 && (
+          <MainSection title="Education">
+            {education.map((item) => (
+              <div key={item.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                <div style={{ fontWeight: 700, fontSize: '11px' }}>{item.school}</div>
+                {(item.degree || item.field) && (
+                  <div style={{ color: '#444', fontSize: '10px', marginBottom: '1px' }}>
+                    {[item.degree, item.field].filter(Boolean).join(', ')}
+                  </div>
+                )}
+                {(item.startDate || item.endDate) && (
+                  <div style={{ color: '#888', fontSize: '9.5px' }}>
+                    {item.startDate}{item.startDate ? ' – ' : ''}{item.current ? 'Present' : item.endDate}
+                  </div>
+                )}
+              </div>
+            ))}
+          </MainSection>
+        )}
+
         {/* Experience */}
         {experience.length > 0 && (
           <MainSection title="Work Experience">
@@ -161,27 +182,6 @@ export default function AtlanticBlueTemplate({ data }: Props) {
                       <li key={i} style={{ marginBottom: '2px', color: '#333' }}>{b}</li>
                     ))}
                   </ul>
-                )}
-              </div>
-            ))}
-          </MainSection>
-        )}
-
-        {/* Education */}
-        {education.length > 0 && (
-          <MainSection title="Education">
-            {education.map((item) => (
-              <div key={item.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                <div style={{ fontWeight: 700, fontSize: '11px' }}>{item.school}</div>
-                {(item.degree || item.field) && (
-                  <div style={{ color: '#444', fontSize: '10px', marginBottom: '1px' }}>
-                    {[item.degree, item.field].filter(Boolean).join(', ')}
-                  </div>
-                )}
-                {(item.startDate || item.endDate) && (
-                  <div style={{ color: '#888', fontSize: '9.5px' }}>
-                    {item.startDate}{item.startDate ? ' – ' : ''}{item.current ? 'Present' : item.endDate}
-                  </div>
                 )}
               </div>
             ))}

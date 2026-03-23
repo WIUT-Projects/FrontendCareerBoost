@@ -54,6 +54,23 @@ export default function MinimalTemplate({ data }: Props) {
         </MinSection>
       )}
 
+      {/* Education */}
+      {education.length > 0 && (
+        <MinSection title="Education">
+          {education.map((item) => (
+            <div key={item.id} style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>{item.school}</div>
+                <div style={{ color: '#666' }}>{[item.degree, item.field].filter(Boolean).join(', ')}</div>
+              </div>
+              <div style={{ color: '#aaa', fontSize: '10px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                {item.startDate}{item.startDate ? ' – ' : ''}{item.current ? 'Present' : item.endDate}
+              </div>
+            </div>
+          ))}
+        </MinSection>
+      )}
+
       {/* Experience */}
       {experience.length > 0 && (
         <MinSection title="Experience">
@@ -69,23 +86,6 @@ export default function MinimalTemplate({ data }: Props) {
                     ))}
                   </ul>
                 )}
-              </div>
-              <div style={{ color: '#aaa', fontSize: '10px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                {item.startDate}{item.startDate ? ' – ' : ''}{item.current ? 'Present' : item.endDate}
-              </div>
-            </div>
-          ))}
-        </MinSection>
-      )}
-
-      {/* Education */}
-      {education.length > 0 && (
-        <MinSection title="Education">
-          {education.map((item) => (
-            <div key={item.id} style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{item.school}</div>
-                <div style={{ color: '#666' }}>{[item.degree, item.field].filter(Boolean).join(', ')}</div>
               </div>
               <div style={{ color: '#aaa', fontSize: '10px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                 {item.startDate}{item.startDate ? ' – ' : ''}{item.current ? 'Present' : item.endDate}

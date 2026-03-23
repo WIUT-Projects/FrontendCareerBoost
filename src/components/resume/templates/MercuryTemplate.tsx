@@ -88,6 +88,28 @@ export default function MercuryTemplate({ data }: Props) {
         </Section>
       )}
 
+      {/* ── Education ── */}
+      {education.length > 0 && (
+        <Section title="Education">
+          {education.map((item) => (
+            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+              <div style={{ width: '90px', flexShrink: 0, fontSize: '9px', color: '#777', fontFamily: 'Arial, sans-serif', lineHeight: '1.6', paddingTop: '1px' }}>
+                <div>{item.startDate}{item.startDate && ' –'}</div>
+                <div>{item.current ? 'present' : item.endDate}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '11px' }}>{item.school}</div>
+                {(item.degree || item.field) && (
+                  <div style={{ color: '#555', fontStyle: 'italic', fontSize: '10px' }}>
+                    {[item.degree, item.field].filter(Boolean).join(', ')}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </Section>
+      )}
+
       {/* ── Work Experience ── */}
       {experience.length > 0 && (
         <Section title="Work Experience">
@@ -108,28 +130,6 @@ export default function MercuryTemplate({ data }: Props) {
                       <li key={i} style={{ marginBottom: '2px', color: '#333' }}>{b}</li>
                     ))}
                   </ul>
-                )}
-              </div>
-            </div>
-          ))}
-        </Section>
-      )}
-
-      {/* ── Education ── */}
-      {education.length > 0 && (
-        <Section title="Education">
-          {education.map((item) => (
-            <div key={item.id} style={{ display: 'flex', gap: '16px', marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-              <div style={{ width: '90px', flexShrink: 0, fontSize: '9px', color: '#777', fontFamily: 'Arial, sans-serif', lineHeight: '1.6', paddingTop: '1px' }}>
-                <div>{item.startDate}{item.startDate && ' –'}</div>
-                <div>{item.current ? 'present' : item.endDate}</div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: '11px' }}>{item.school}</div>
-                {(item.degree || item.field) && (
-                  <div style={{ color: '#555', fontStyle: 'italic', fontSize: '10px' }}>
-                    {[item.degree, item.field].filter(Boolean).join(', ')}
-                  </div>
                 )}
               </div>
             </div>

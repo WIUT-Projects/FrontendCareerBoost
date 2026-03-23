@@ -176,24 +176,94 @@ export default function ResumeEditPage() {
   useEffect(() => { if (!isLoaded.current) return; doSave('skills', JSON.stringify(debouncedSkills)); }, [debouncedSkills]);
   useEffect(() => { if (!isLoaded.current) return; doSave('languages', JSON.stringify(debouncedLanguages)); }, [debouncedLanguages]);
 
-  // Download PDF — use a hidden full-size (no zoom) container to avoid html2canvas artifacts
+  // ─── PDF Download ────────────────────────────────────────────────────────────
+  // Strategy:
+  //  1. The pdfRef element renders the resume at full size (off-screen, visibility:hidden).
+  //  2. We CLONE that content and temporarily append it to document.body, bypassing
+  //     any overflow:hidden ancestor that would cap the element's measured height.
+  //  3. html2canvas captures the FULL height from the body-attached clone.
+  //  4. We slice the resulting canvas into A4-height strips and add each as a PDF page.
   const pdfRef = useRef<HTMLDivElement>(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
   const handleDownload = async () => {
-    if (!pdfRef.current) return;
-    const { default: html2canvas } = await import('html2canvas');
-    const { jsPDF } = await import('jspdf');
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      windowWidth: 794, // 210mm at 96dpi
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const imgWidth = 210;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    pdf.save(`${title || 'resume'}.pdf`);
+    if (!pdfRef.current || pdfGenerating) return;
+    setPdfGenerating(true);
+
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+
+      // --- Step 1: clone rendered content into a body-level div (no overflow clipping) ---
+      const clone = pdfRef.current.cloneNode(true) as HTMLElement;
+
+      // Strip the page-break visual lines — they are UI-only, not real content
+      clone.querySelectorAll('.resume-page-break-line').forEach(el => el.remove());
+
+      // Temporary capture wrapper: fixed at (0,0) so html2canvas can see the full height,
+      // behind all content via z-index so the user never sees it.
+      const captureEl = document.createElement('div');
+      captureEl.style.cssText =
+        'position:fixed;top:0;left:0;width:794px;z-index:-99999;pointer-events:none;background:#fff;';
+      captureEl.appendChild(clone);
+      document.body.appendChild(captureEl);
+
+      // Give the browser one animation frame to perform layout on the clone
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+      const fullHeight = captureEl.scrollHeight; // full content height, no clipping
+
+      // --- Step 2: capture ---
+      const canvas = await html2canvas(captureEl, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: 794,        // 210 mm at 96 dpi — matches template width
+        windowHeight: fullHeight, // virtual window tall enough for all content
+        height: fullHeight,
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      // Clean up the temporary DOM node immediately after capture
+      document.body.removeChild(captureEl);
+
+      // --- Step 3: slice canvas into A4 pages ---
+      const PAGE_W_MM = 210;
+      const PAGE_H_MM = 297;
+      // canvas.width == 794 * scale == 1588 px  →  represents 210 mm
+      // one A4 page height in canvas pixels:
+      const a4PageHPx = Math.round((PAGE_H_MM / PAGE_W_MM) * canvas.width);
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let yOffset = 0;
+      let pageIdx = 0;
+
+      while (yOffset < canvas.height) {
+        if (pageIdx > 0) pdf.addPage();
+
+        const sliceH = Math.min(a4PageHPx, canvas.height - yOffset);
+
+        const tmp = document.createElement('canvas');
+        tmp.width  = canvas.width;
+        tmp.height = sliceH;
+        const ctx = tmp.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        }
+
+        // sliceH canvas-px → mm (canvas.width = 210 mm)
+        const sliceHeightMm = (sliceH / canvas.width) * PAGE_W_MM;
+        pdf.addImage(tmp.toDataURL('image/png'), 'PNG', 0, 0, PAGE_W_MM, sliceHeightMm);
+
+        yOffset  += a4PageHPx;
+        pageIdx  += 1;
+      }
+
+      pdf.save(`${title || 'resume'}.pdf`);
+    } finally {
+      setPdfGenerating(false);
+    }
   };
 
   if (loading) {
@@ -245,8 +315,8 @@ export default function ResumeEditPage() {
               </span>
             )}
             {/* Mobile-only: Download + AI Review */}
-            <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7 flex-shrink-0" onClick={handleDownload}>
-              <Download className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7 flex-shrink-0" onClick={handleDownload} disabled={pdfGenerating}>
+              {pdfGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             </Button>
             <span className="lg:hidden flex-shrink-0">
               <AiReviewButton variant="icon" size="sm" onClick={handleAiReview} />
@@ -327,9 +397,11 @@ export default function ResumeEditPage() {
         <div className="flex flex-col lg:w-[54%] overflow-hidden min-h-[300px] lg:min-h-0">
           {/* Desktop-only: Download + AI Review strip */}
           <div className="hidden lg:flex flex-shrink-0 border-b bg-gray-100 items-center justify-end gap-2.5 px-4 py-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload}>
-              <Download className="h-4 w-4" />
-              {t('resume.download')}
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload} disabled={pdfGenerating}>
+              {pdfGenerating
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Download className="h-4 w-4" />}
+              {pdfGenerating ? 'Generating…' : t('resume.download')}
             </Button>
             <AiReviewButton size="sm" onClick={handleAiReview} />
           </div>
@@ -343,10 +415,23 @@ export default function ResumeEditPage() {
         </div>
       </div>
 
-      {/* Hidden full-size resume for PDF capture — no zoom so html2canvas renders cleanly */}
+      {/*
+        Off-screen render container.
+        React renders the full-size (no zoom) resume here so cloneNode() in
+        handleDownload always gets the latest content.
+        position:fixed escapes overflow:hidden ancestors; visibility:hidden
+        ensures it is never visible but still fully laid out by the browser.
+      */}
       <div
         aria-hidden="true"
-        style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '210mm', pointerEvents: 'none' }}
+        style={{
+          position: 'fixed',
+          top: '-9999px',
+          left: '-9999px',
+          width: '794px',         // 210 mm at 96 dpi — exact pixel width
+          visibility: 'hidden',
+          pointerEvents: 'none',
+        }}
       >
         <div ref={pdfRef}>
           <ResumeRenderer sections={sections} templateId={resume.templateId} />

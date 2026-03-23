@@ -40,6 +40,26 @@ export default function ClassicTemplate({ data }: Props) {
         </SectionBlock>
       )}
 
+      {/* Education */}
+      {education.length > 0 && (
+        <SectionBlock title="Education">
+          {education.map((item) => (
+            <div key={item.id} style={{ marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <strong style={{ fontSize: '12px' }}>{item.school}</strong>
+                <span style={{ color: '#666', fontSize: '10px' }}>
+                  {item.startDate}{item.startDate ? ' – ' : ''}{item.current ? 'Present' : item.endDate}
+                </span>
+              </div>
+              {(item.degree || item.field) && (
+                <div style={{ color: '#555' }}>{[item.degree, item.field].filter(Boolean).join(', ')}</div>
+              )}
+              {item.description && <div style={{ color: '#666', marginTop: '2px' }}>{item.description}</div>}
+            </div>
+          ))}
+        </SectionBlock>
+      )}
+
       {/* Experience */}
       {experience.length > 0 && (
         <SectionBlock title="Experience">
@@ -59,26 +79,6 @@ export default function ClassicTemplate({ data }: Props) {
                   ))}
                 </ul>
               )}
-            </div>
-          ))}
-        </SectionBlock>
-      )}
-
-      {/* Education */}
-      {education.length > 0 && (
-        <SectionBlock title="Education">
-          {education.map((item) => (
-            <div key={item.id} style={{ marginBottom: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <strong style={{ fontSize: '12px' }}>{item.school}</strong>
-                <span style={{ color: '#666', fontSize: '10px' }}>
-                  {item.startDate}{item.startDate ? ' – ' : ''}{item.current ? 'Present' : item.endDate}
-                </span>
-              </div>
-              {(item.degree || item.field) && (
-                <div style={{ color: '#555' }}>{[item.degree, item.field].filter(Boolean).join(', ')}</div>
-              )}
-              {item.description && <div style={{ color: '#666', marginTop: '2px' }}>{item.description}</div>}
             </div>
           ))}
         </SectionBlock>

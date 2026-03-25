@@ -27,8 +27,9 @@ const formatTime = formatLocalTime;
 
 function StatusBadge({ status }: { status: string | null }) {
   const s = status ?? '';
-  if (s === 'Approved') return <Badge className="bg-emerald-500/15 text-emerald-600 border-0">Approved</Badge>;
-  if (s === 'Rejected') return <Badge className="bg-destructive/15 text-destructive border-0">Rejected</Badge>;
+  if (s === 'Approved')       return <Badge className="bg-emerald-500/15 text-emerald-600 border-0">Approved</Badge>;
+  if (s === 'Rejected')       return <Badge className="bg-destructive/15 text-destructive border-0">Rejected</Badge>;
+  if (s === 'PendingPayment') return <Badge className="bg-blue-500/15 text-blue-600 border-0">Awaiting Payment</Badge>;
   return <Badge className="bg-amber-500/15 text-amber-600 border-0">Pending</Badge>;
 }
 

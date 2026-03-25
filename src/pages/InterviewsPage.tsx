@@ -21,8 +21,9 @@ const formatTime = formatLocalTime;
 
 function StatusBadge({ status }: { status: string | null }) {
   const s = status ?? '';
-  if (s === 'Approved') return <Badge className="bg-emerald-500/15 text-emerald-600 border-0 font-medium">Approved</Badge>;
-  if (s === 'Rejected') return <Badge className="bg-destructive/15 text-destructive border-0 font-medium">Rejected</Badge>;
+  if (s === 'Approved')       return <Badge className="bg-emerald-500/15 text-emerald-600 border-0 font-medium">Approved</Badge>;
+  if (s === 'Rejected')       return <Badge className="bg-destructive/15 text-destructive border-0 font-medium">Rejected</Badge>;
+  if (s === 'PendingPayment') return <Badge className="bg-blue-500/15 text-blue-600 border-0 font-medium">Awaiting Payment</Badge>;
   return <Badge className="bg-amber-500/15 text-amber-600 border-0 font-medium">Pending</Badge>;
 }
 
@@ -84,6 +85,13 @@ function BookingCard({ booking }: { booking: BookingItem }) {
             Waiting for HR expert approval
           </p>
         )}
+
+        {booking.status === 'PendingPayment' && (
+          <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+            <AlertCircle className="h-3.5 w-3.5" />
+            Payment not completed — session not confirmed yet
+          </p>
+        )}
       </div>
 
       <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -123,9 +131,11 @@ export default function InterviewsPage() {
       .finally(() => setLoading(false));
   }, [session?.access_token]);
 
+  const isPending = (b: BookingItem) => b.status === 'Pending' || b.status === 'PendingPayment';
+
   const filtered: BookingItem[] = (() => {
     switch (tab) {
-      case 'pending':  return allBookings.filter(b => b.status === 'Pending');
+      case 'pending':  return allBookings.filter(isPending);
       case 'upcoming': return allBookings.filter(b => b.status === 'Approved' && isUpcoming(b.scheduledAt));
       case 'past':     return allBookings.filter(b => b.status === 'Approved' && !isUpcoming(b.scheduledAt));
       case 'rejected': return allBookings.filter(b => b.status === 'Rejected');
@@ -133,7 +143,7 @@ export default function InterviewsPage() {
   })();
 
   const counts = {
-    pending:  allBookings.filter(b => b.status === 'Pending').length,
+    pending:  allBookings.filter(isPending).length,
     upcoming: allBookings.filter(b => b.status === 'Approved' && isUpcoming(b.scheduledAt)).length,
     past:     allBookings.filter(b => b.status === 'Approved' && !isUpcoming(b.scheduledAt)).length,
     rejected: allBookings.filter(b => b.status === 'Rejected').length,

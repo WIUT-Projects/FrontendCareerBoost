@@ -10,7 +10,7 @@ export interface BookingItem {
   jobSeekerAvatar: string | null;
   scheduledAt: string;
   durationMinutes: number;
-  status: string | null;       // "Pending" | "Approved" | "Rejected"
+  status: string | null;       // "PendingPayment" | "Pending" | "Approved" | "Rejected"
   googleMeetLink: string | null;
   notes: string | null;
   createdAt: string;
@@ -93,5 +93,28 @@ export async function rejectBooking(token: string, id: number): Promise<void> {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { detail?: string }).detail ?? 'Failed to reject booking');
   }
+}
+
+// ─── Checkout ─────────────────────────────────────────────────────────────────
+
+export interface BookHrExpertPayload {
+  hrExpertId: number;
+  scheduledAt: string;          // ISO 8601
+  durationMinutes: number;
+  resumeId?: number | null;
+  notes?: string | null;
+}
+
+export async function createBookingCheckout(
+  token: string,
+  payload: BookHrExpertPayload,
+): Promise<{ checkoutUrl: string }> {
+  const res = await fetch(`${API_URL}/api/bookings/checkout`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to create booking checkout');
+  return res.json();
 }
 

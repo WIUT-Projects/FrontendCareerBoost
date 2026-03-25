@@ -31,6 +31,8 @@ export { default as ProfileSettingsPage } from './ProfileSettingsPage';
 export { default as SubscriptionPage } from './Subscription';
 export { default as SubscriptionSuccessPage } from './SubscriptionSuccess';
 export { default as SubscriptionCancelPage } from './SubscriptionCancel';
+export { default as HrBookingSuccessPage } from './HrBookingSuccess';
+export { default as HrBookingCancelPage  } from './HrBookingCancel';
 export const BillingPage = () => <PlaceholderPage icon={CreditCard} title="Billing History" description="View your payment history and download receipts." />;
 export const DangerZonePage = () => <PlaceholderPage icon={Shield} title="Danger Zone" description="Delete your account or revoke OAuth permissions." />;
 

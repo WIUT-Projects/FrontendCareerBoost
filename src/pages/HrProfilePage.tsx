@@ -13,10 +13,11 @@ import {
   MessageSquare, CalendarPlus, Loader2, CheckCircle2,
 } from 'lucide-react';
 import {
-  getHrExpertById, bookHrExpert,
+  getHrExpertById,
   getSpecializationChips, formatPrice,
   type HrExpertItem,
 } from '@/services/hrExpertService';
+import { createBookingCheckout } from '@/services/bookingService';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn, resolveMediaUrl } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -93,16 +94,15 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
     if (!session?.access_token) { toast.error('You must be logged in'); return; }
     setLoading(true);
     try {
-      await bookHrExpert(session.access_token, {
-        hrExpertId: expert.id, scheduledAt,
+      const { checkoutUrl } = await createBookingCheckout(session.access_token, {
+        hrExpertId: expert.id,
+        scheduledAt,
         durationMinutes: parseInt(duration),
         notes: notes.trim() || undefined,
       });
-      toast.success('Session booked successfully!');
-      onSuccess();
+      window.location.href = checkoutUrl;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Booking failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -209,7 +209,7 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
             </Button>
             <Button onClick={handleBook} disabled={loading} className="flex-[2] rounded-xl h-10 gap-2 font-semibold">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              {loading ? 'Booking…' : 'Confirm Booking'}
+              {loading ? 'Redirecting…' : 'Pay & Book'}
             </Button>
           </div>
         </div>

@@ -23,6 +23,7 @@ import {
   BlogPage, ArticlePage,
   InboxPage, ChatPage, NotificationsPage,
   ProfileSettingsPage, SubscriptionPage, SubscriptionSuccessPage, SubscriptionCancelPage, BillingPage, DangerZonePage,
+  HrBookingSuccessPage, HrBookingCancelPage,
   HrPortalDashboard, HrReviewsPage, HrReviewDetailPage, HrAvailabilityPage,
   HrProfileEditPage, HrRatingsPage, HrJobListingsPage, HrApplicantsPage, HrInterviewsPage,
   AdminDashboard, AdminUsersPage, AdminResumesPage, AdminTemplatesPage,
@@ -91,6 +92,9 @@ const App = () => (
                   {/* Stripe payment result pages */}
                   <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
                   <Route path="/subscription/cancel" element={<SubscriptionCancelPage />} />
+                  {/* HR booking payment result pages */}
+                  <Route path="/booking/success" element={<HrBookingSuccessPage />} />
+                  <Route path="/booking/cancel"  element={<HrBookingCancelPage />} />
                 </Route>
               </Route>
 

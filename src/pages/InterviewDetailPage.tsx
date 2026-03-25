@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  ArrowLeft, Calendar, Clock, Video, Copy, Check, FileText, AlertCircle,
+  ArrowLeft, Calendar, Clock, Video, Copy, Check, FileText, AlertCircle, Star,
 } from 'lucide-react';
 import { getBookingById, type BookingItem } from '@/services/bookingService';
 import { resolveMediaUrl, formatLocalDateTime, isUpcoming } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getBookingFeedback, type FeedbackItem } from '@/services/feedbackService';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 const formatDateTime = formatLocalDateTime;
 
@@ -28,11 +30,20 @@ export default function InterviewDetailPage() {
   const [booking, setBooking] = useState<BookingItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied,  setCopied]  = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackItem | null | undefined>(undefined);
+  const [feedbackModal, setFeedbackModal] = useState(false);
 
   useEffect(() => {
     if (!session?.access_token || !id) return;
     getBookingById(session.access_token, Number(id))
-      .then(setBooking)
+      .then(b => {
+        setBooking(b);
+        if (b?.status === 'Approved') {
+          getBookingFeedback(session!.access_token, Number(id))
+            .then(f => setFeedback(f))
+            .catch(() => setFeedback(null));
+        }
+      })
       .catch(() => toast.error('Session not found'))
       .finally(() => setLoading(false));
   }, [session?.access_token, id]);
@@ -209,7 +220,54 @@ export default function InterviewDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Feedback section — job seeker only, approved booking */}
+        {!isHr && booking.status === 'Approved' && (
+          <div className="bg-card border rounded-2xl p-5">
+            {feedback ? (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Your Rating</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <Star
+                      key={s}
+                      className={`h-5 w-5 ${s <= feedback.score ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/20'}`}
+                    />
+                  ))}
+                </div>
+                {feedback.comment && (
+                  <p className="text-sm text-muted-foreground italic">"{feedback.comment}"</p>
+                )}
+              </div>
+            ) : feedback === null ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Rate this session</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Share your experience with this HR expert.</p>
+                </div>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setFeedbackModal(true)}>
+                  <Star className="h-3.5 w-3.5" />
+                  Rate
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
+
+      {booking && feedbackModal && (
+        <FeedbackModal
+          open={feedbackModal}
+          onClose={() => setFeedbackModal(false)}
+          bookingId={booking.id}
+          hrExpertName={booking.hrExpertName ?? 'HR Expert'}
+          onSubmitted={() => {
+            getBookingFeedback(session!.access_token, booking.id)
+              .then(f => setFeedback(f))
+              .catch(() => {});
+          }}
+        />
+      )}
     </div>
   );
 }

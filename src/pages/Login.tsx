@@ -137,7 +137,8 @@ export default function LoginPage() {
   useEffect(() => { signOut(); }, [signOut]);
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}${AUTH_GOOGLE}`;
+    const url = AUTH_GOOGLE?.startsWith('http') ? AUTH_GOOGLE : `${API_URL}${AUTH_GOOGLE}`;
+    window.location.href = url;
   };
 
   return (

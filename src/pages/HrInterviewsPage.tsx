@@ -8,10 +8,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Calendar, Clock, Video, CheckCircle, XCircle, FileText, Loader2, Copy, Check, RefreshCw,
+  Calendar, Clock, Video, CheckCircle, XCircle, FileText, Loader2, Copy, Check,
 } from 'lucide-react';
 import {
-  getHrBookings, approveBooking, rejectBooking, regenerateLink, type BookingItem,
+  getHrBookings, approveBooking, rejectBooking, type BookingItem,
 } from '@/services/bookingService';
 import { resolveMediaUrl, cn, utcDate, formatLocalTime, isUpcoming } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -100,29 +100,10 @@ function PendingCard({
 
 // ─── Approved card ────────────────────────────────────────────────────────────
 
-/** Link Google Meet emas yoki eski format → invalid */
-function isInvalidMeetLink(link: string | null | undefined): boolean {
-  if (!link) return true;
-  // Jitsi yoki boshqa link → invalid
-  if (!link.startsWith('https://meet.google.com/')) return true;
-  // Google Meet format: xxx-yyyy-zzz (faqat harflar, 3-4-3)
-  const code = link.replace('https://meet.google.com/', '');
-  return !/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(code);
-}
-
-function ApprovedCard({
-  booking,
-  onUpdated,
-}: {
-  booking: BookingItem;
-  onUpdated: (b: BookingItem) => void;
-}) {
-  const { session } = useAuth();
-  const [copied, setCopied]         = useState(false);
-  const [regenerating, setRegen]    = useState(false);
+function ApprovedCard({ booking }: { booking: BookingItem }) {
+  const [copied, setCopied] = useState(false);
   const initials = booking.jobSeekerName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) ?? 'JS';
   const upcoming = isUpcoming(booking.scheduledAt);
-  const badLink  = isInvalidMeetLink(booking.googleMeetLink ?? null);
 
   function copyLink() {
     if (!booking.googleMeetLink) return;
@@ -131,23 +112,8 @@ function ApprovedCard({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  async function handleRegenerate() {
-    if (!session?.access_token) return;
-    setRegen(true);
-    try {
-      const updated = await regenerateLink(session.access_token, booking.id);
-      onUpdated(updated);
-      toast.success('New Google Meet link generated!');
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to regenerate link');
-    } finally {
-      setRegen(false);
-    }
-  }
-
   return (
     <div className="bg-card border rounded-2xl p-5 space-y-3">
-      {/* Header */}
       <div className="flex items-start gap-3">
         <Avatar className="h-11 w-11 shrink-0 ring-2 ring-emerald-500/20">
           {booking.jobSeekerAvatar && <AvatarImage src={resolveMediaUrl(booking.jobSeekerAvatar)} alt={booking.jobSeekerName ?? ''} />}
@@ -163,74 +129,36 @@ function ApprovedCard({
         <StatusBadge status={booking.status} />
       </div>
 
-      {/* Google Meet link */}
-      <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/20 p-3 space-y-2">
-        <div className="flex items-center justify-between">
+      {booking.googleMeetLink && (
+        <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/20 p-3 space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
             <Video className="h-3.5 w-3.5" />
             Google Meet Room
           </div>
-          {/* Regenerate button — shown when link is invalid/missing */}
-          {badLink && (
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs rounded-lg px-3 py-1.5 truncate border bg-background/60 text-muted-foreground">
+              {booking.googleMeetLink}
+            </code>
             <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 transition-colors"
-              title="Regenerate valid link"
+              onClick={copyLink}
+              className="p-1.5 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Copy link"
             >
-              {regenerating
-                ? <Loader2 className="h-3 w-3 animate-spin" />
-                : <RefreshCw className="h-3 w-3" />}
-              {regenerating ? 'Generating...' : 'Fix link'}
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
+          </div>
+          {upcoming && (
+            <Button
+              size="sm"
+              className="w-full gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => window.open(booking.googleMeetLink!, '_blank')}
+            >
+              <Video className="h-3.5 w-3.5" />
+              Join Google Meet
+            </Button>
           )}
         </div>
-
-        {badLink && (
-          <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg px-2 py-1">
-            ⚠️ Bu link yaroqsiz. Google Meet link olish uchun "Fix link" ni bosing.
-          </p>
-        )}
-        {booking.googleMeetLink && (
-          <>
-            <div className="flex items-center gap-2">
-              <code className={`flex-1 text-xs rounded-lg px-3 py-1.5 truncate border ${badLink ? 'bg-amber-500/5 text-amber-700 border-amber-500/30' : 'bg-background/60 text-muted-foreground'}`}>
-                {booking.googleMeetLink}
-              </code>
-              <button
-                onClick={copyLink}
-                className="p-1.5 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title="Copy link"
-              >
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-              </button>
-            </div>
-            {upcoming && !badLink && (
-              <Button
-                size="sm"
-                className="w-full gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => window.open(booking.googleMeetLink!, '_blank')}
-              >
-                <Video className="h-3.5 w-3.5" />
-                Join Google Meet
-              </Button>
-            )}
-          </>
-        )}
-
-        {!booking.googleMeetLink && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full gap-2 text-xs"
-            onClick={handleRegenerate}
-            disabled={regenerating}
-          >
-            {regenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Generate Meet Link
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -408,7 +336,6 @@ export default function HrInterviewsPage() {
                     <ApprovedCard
                       key={b.id}
                       booking={b}
-                      onUpdated={updated => setBookings(prev => prev.map(x => x.id === updated.id ? updated : x))}
                     />
                   )
                 )

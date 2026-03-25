@@ -22,8 +22,8 @@ export { default as SavedJobsPage } from './SavedJobs';
 export { default as ApplicationsPage } from './Applications';
 export { default as BlogPage } from './Blog';
 export { default as ArticlePage } from './Article';
-export const InboxPage = () => <PlaceholderPage icon={MessageSquare} title="Messages" description="Your conversations with HR experts and recruiters." />;
-export const ChatPage = () => <PlaceholderPage icon={MessageSquare} title="Chat" description="Real-time messaging with your contact." />;
+export { default as InboxPage } from './MessagesPage';
+export { default as ChatPage } from './ConversationPage';
 export const NotificationsPage = () => <PlaceholderPage icon={Bell} title="Notifications" description="All your platform notifications and updates." />;
 
 // Settings pages

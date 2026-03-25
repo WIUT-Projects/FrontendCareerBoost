@@ -59,7 +59,6 @@ export function AppSidebar() {
     { title: t('sidebar.myProfile'), url: '/hr-portal/profile', icon: Users },
     { title: t('sidebar.jobListings'), url: '/hr-portal/jobs', icon: Briefcase },
     { title: t('sidebar.applicants'), url: '/hr-portal/applicants', icon: Users },
-    { title: t('sidebar.messages'), url: '/messages', icon: MessageSquare },
     { title: t('sidebar.blog'), url: '/blog', icon: BookOpen },
   ];
 

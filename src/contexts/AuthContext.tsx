@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as authService from '@/services/authService';
 import type { StoredSession } from '@/services/authService';
+import { startConnection, stopConnection } from '@/services/signalRService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(stored.user);
       setProfile(stored.profile);
       setSession({ access_token: stored.accessToken, user: stored.user });
+      startConnection(stored.accessToken);
     }
     setIsLoading(false);
   }, []);
@@ -60,9 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
     setProfile(data.profile);
     setSession({ access_token: data.accessToken, user: data.user });
+    startConnection(data.accessToken);
   }, []);
 
   const signOut = useCallback(async () => {
+    await stopConnection();
     authService.clearSession();
     setUser(null);
     setProfile(null);

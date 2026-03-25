@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  ArrowLeft, ShieldCheck, Star, Briefcase, Clock,
+  ShieldCheck, Star, Briefcase, Clock,
   MessageSquare, CalendarPlus, Loader2, CheckCircle2,
 } from 'lucide-react';
 import {
@@ -223,7 +223,6 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
 
 export default function HrProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
 
@@ -278,9 +277,6 @@ export default function HrProfilePage() {
       <div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
         <ShieldCheck className="h-12 w-12 opacity-20" />
         <p className="font-medium">HR Expert not found</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/hr-directory')}>
-          <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to directory
-        </Button>
       </div>
     );
   }
@@ -289,14 +285,6 @@ export default function HrProfilePage() {
     <div className="h-full overflow-y-auto">
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
-        {/* Back navigation */}
-        <button
-          onClick={() => navigate('/hr-directory')}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          HR Expert Directory
-        </button>
 
         {/* Profile card */}
         <div className="bg-card border rounded-2xl overflow-hidden">

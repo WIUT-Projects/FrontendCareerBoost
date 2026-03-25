@@ -67,10 +67,15 @@ export async function getBookingById(
 
 // ─── HR actions ───────────────────────────────────────────────────────────────
 
-export async function approveBooking(token: string, id: number): Promise<BookingItem> {
+export async function approveBooking(
+  token: string,
+  id: number,
+  customMeetLink?: string,
+): Promise<BookingItem> {
   const res = await fetch(`${API_URL}/api/bookings/${id}/approve`, {
     method: 'PUT',
     headers: authHeaders(token),
+    body: JSON.stringify({ customMeetLink: customMeetLink ?? null }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -90,15 +95,3 @@ export async function rejectBooking(token: string, id: number): Promise<void> {
   }
 }
 
-/** Regenerate Google Meet link for an approved booking (fixes old digit-based links) */
-export async function regenerateLink(token: string, id: number): Promise<BookingItem> {
-  const res = await fetch(`${API_URL}/api/bookings/${id}/regenerate-link`, {
-    method: 'PUT',
-    headers: authHeaders(token),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail ?? 'Failed to regenerate link');
-  }
-  return res.json();
-}

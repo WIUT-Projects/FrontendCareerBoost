@@ -22,7 +22,7 @@ import {
   JobsPage, JobDetailPage, SavedJobsPage, ApplicationsPage,
   BlogPage, ArticlePage,
   InboxPage, ChatPage, NotificationsPage,
-  ProfileSettingsPage, SubscriptionPage, BillingPage, DangerZonePage,
+  ProfileSettingsPage, SubscriptionPage, SubscriptionSuccessPage, SubscriptionCancelPage, BillingPage, DangerZonePage,
   HrPortalDashboard, HrReviewsPage, HrReviewDetailPage, HrAvailabilityPage,
   HrProfileEditPage, HrRatingsPage, HrJobListingsPage, HrApplicantsPage, HrInterviewsPage,
   AdminDashboard, AdminUsersPage, AdminResumesPage, AdminTemplatesPage,
@@ -88,6 +88,9 @@ const App = () => (
                   <Route path="/settings/subscription" element={<SubscriptionPage />} />
                   <Route path="/settings/billing" element={<BillingPage />} />
                   <Route path="/settings/danger" element={<DangerZonePage />} />
+                  {/* Stripe payment result pages */}
+                  <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
+                  <Route path="/subscription/cancel" element={<SubscriptionCancelPage />} />
                 </Route>
               </Route>
 

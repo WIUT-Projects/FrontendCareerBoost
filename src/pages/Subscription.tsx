@@ -7,7 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TiltCard } from '@/components/shared/TiltCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSubscriptionPlans, type SubscriptionPlanDto } from '@/services/subscriptionService';
+import { toast } from 'sonner';
+import {
+  getSubscriptionPlans,
+  createCheckoutSession,
+  type SubscriptionPlanDto,
+} from '@/services/subscriptionService';
 
 function getPlanCta(planName: string, currentTier: string | undefined, t: any) {
   const tier = (currentTier ?? '').toLowerCase();
@@ -71,9 +76,10 @@ function getTranslatedFeature(key: string, t: any, count?: number): string {
 export function PricingSection({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlanDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoadingId, setCheckoutLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
     getSubscriptionPlans()
@@ -82,6 +88,35 @@ export function PricingSection({ embedded = false }: { embedded?: boolean }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // ─── Stripe Checkout ──────────────────────────────────────────────────────
+
+  const handleSubscribe = async (plan: SubscriptionPlanDto) => {
+    // Free plan → just navigate to dashboard
+    if (plan.priceUzs === 0) {
+      navigate('/dashboard');
+      return;
+    }
+
+    // Not logged in → go to login
+    if (!session?.access_token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setCheckoutLoadingId(plan.id);
+      const { checkoutUrl } = await createCheckoutSession(plan.id);
+
+      // Redirect to Stripe Checkout page
+      window.location.href = checkoutUrl;
+    } catch (err: any) {
+      toast.error(err?.message ?? "To'lov sahifasini ochib bo'lmadi");
+      setCheckoutLoadingId(null);
+    }
+  };
+
+  // ─── Loading skeleton ─────────────────────────────────────────────────────
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-16">
@@ -89,6 +124,8 @@ export function PricingSection({ embedded = false }: { embedded?: boolean }) {
       </div>
     );
   }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className={cn(!embedded && 'py-8')}>
@@ -101,9 +138,14 @@ export function PricingSection({ embedded = false }: { embedded?: boolean }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
         {plans.map((plan) => {
-          const popular = plan.displayOrder === 2;
-          const { label, disabled } = getPlanCta(plan.name, profile?.role === 'admin' ? 'Admin' : profile?.subscriptionTier, t);
-          const featureKeys = getFeatureKeys(plan);
+          const popular      = plan.displayOrder === 2;
+          const { label, disabled } = getPlanCta(
+            plan.name,
+            profile?.role === 'admin' ? 'Admin' : (profile as any)?.subscriptionTier,
+            t,
+          );
+          const featureKeys  = getFeatureKeys(plan);
+          const isProcessing = checkoutLoadingId === plan.id;
 
           return (
             <TiltCard
@@ -112,7 +154,7 @@ export function PricingSection({ embedded = false }: { embedded?: boolean }) {
                 'relative rounded-xl border p-5 flex flex-col',
                 popular
                   ? 'border-primary/40 bg-gradient-to-b from-primary/5 to-card shadow-md'
-                  : 'bg-card'
+                  : 'bg-card',
               )}
             >
               {popular && (
@@ -122,9 +164,13 @@ export function PricingSection({ embedded = false }: { embedded?: boolean }) {
               )}
 
               <div className="mb-4">
-                <h3 className="font-display font-semibold text-sm">{t(`subscription.${plan.name.toLowerCase()}`)}</h3>
+                <h3 className="font-display font-semibold text-sm">
+                  {t(`subscription.${plan.name.toLowerCase()}`)}
+                </h3>
                 <div className="flex items-baseline gap-0.5 mt-1">
-                  <span className="font-display text-2xl font-bold">{formatPrice(plan.priceUzs, t)}</span>
+                  <span className="font-display text-2xl font-bold">
+                    {formatPrice(plan.priceUzs, t)}
+                  </span>
                   {plan.priceUzs > 0 && (
                     <span className="text-xs text-muted-foreground">{t('subscription.perMonth')}</span>
                   )}
@@ -143,12 +189,21 @@ export function PricingSection({ embedded = false }: { embedded?: boolean }) {
               <Button
                 size="sm"
                 variant={popular ? 'default' : 'outline'}
-                disabled={disabled}
+                disabled={disabled || isProcessing}
                 className="w-full rounded-lg"
-                onClick={() => !disabled && navigate('/settings/billing')}
+                onClick={() => !disabled && handleSubscribe(plan)}
               >
-                {label}
-                {!disabled && <ArrowRight className="ml-1.5 h-3.5 w-3.5" />}
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Yuklanmoqda...
+                  </>
+                ) : (
+                  <>
+                    {label}
+                    {!disabled && <ArrowRight className="ml-1.5 h-3.5 w-3.5" />}
+                  </>
+                )}
               </Button>
             </TiltCard>
           );

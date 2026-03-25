@@ -53,3 +53,24 @@ export async function getMySubscriptionStatus(): Promise<SubscriptionStatus> {
   if (!res.ok) throw new Error('Failed to fetch subscription status');
   return res.json();
 }
+
+// ─── Payment / Stripe Checkout ────────────────────────────────────────────────
+
+export interface CheckoutSessionResponse {
+  checkoutUrl: string;
+  paymentId: number;
+}
+
+export async function createCheckoutSession(planId: number): Promise<CheckoutSessionResponse> {
+  const res = await fetch(`${API_URL}/api/payments/checkout?planId=${planId}`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { detail?: string };
+    throw new Error(err.detail ?? "To'lov sahifasini ochib bo'lmadi");
+  }
+
+  return res.json();
+}

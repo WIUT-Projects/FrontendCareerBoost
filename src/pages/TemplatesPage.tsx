@@ -6,8 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getTemplates } from '@/services/resumeService';
 import { loadSession } from '@/services/authService';
-import { getMySubscriptionStatus } from '@/services/subscriptionService';
-import type { SubscriptionStatus } from '@/services/subscriptionService';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import type { ResumeTemplateDto, ResumeSectionDto } from '@/types/resume';
 import ResumeRenderer from '@/components/resume/ResumeRenderer';
 
@@ -219,17 +218,13 @@ export default function TemplatesPage() {
   const session = loadSession();
 
   const [templates, setTemplates] = useState<ResumeTemplateDto[]>([]);
-  const [subStatus, setSubStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'free' | 'premium'>('all');
+  const { data: subStatus } = useSubscriptionStatus();
 
   useEffect(() => {
-    const templatesPromise = getTemplates({ pageSize: 50, isActive: true })
-      .then((res) => setTemplates(res.items ?? []));
-    const statusPromise = session
-      ? getMySubscriptionStatus().then(setSubStatus).catch(() => null)
-      : Promise.resolve();
-    Promise.all([templatesPromise, statusPromise])
+    getTemplates({ pageSize: 50, isActive: true })
+      .then((res) => setTemplates(res.items ?? []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);

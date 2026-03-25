@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  Lock, Sparkles, Loader2, ArrowLeft, Brain, CheckCircle2,
+  Lock, Sparkles, Loader2, ArrowLeft, Brain,
   AlertCircle, ZapOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  analyzeResumeById, analyzeResumePdf, getAiAnalysisById, getAiAnalysisHistory,
+  analyzeResumePdf, getAiAnalysisById,
   type AiAnalysisResult, type AiAnalysisHistoryItem,
 } from '@/services/aiAnalysisService';
-import { getMySubscriptionStatus } from '@/services/subscriptionService';
 import { loadSession } from '@/services/authService';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useAiAnalysisHistory, AI_ANALYSIS_HISTORY_KEY } from '@/hooks/useAiAnalysisHistory';
 
 type PageMode = 'gate' | 'upload' | 'results';
 
@@ -19,55 +21,39 @@ export default function AiAnalysisPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const session = loadSession();
+  const queryClient = useQueryClient();
+
+  const { data: subStatus, isLoading: statusLoading } = useSubscriptionStatus();
+  const { data: history = [], isLoading: historyLoading } = useAiAnalysisHistory();
 
   const [mode, setMode] = useState<PageMode>('upload');
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<AiAnalysisResult | null>(null);
-  const [history, setHistory] = useState<AiAnalysisHistoryItem[]>([]);
   const [error, setError] = useState<string>('');
   const [loadingHistoryId, setLoadingHistoryId] = useState<number | null>(null);
 
-  // ── Initialize: check subscription and mode ──
+  // ── Set mode based on subscription + navigation state ──
   useEffect(() => {
-    if (!session) {
-      navigate('/login');
+    if (statusLoading) return;
+
+    if (subStatus && !subStatus.aiAnalysisEnabled) {
+      setMode('gate');
       return;
     }
 
-    (async () => {
-      try {
-        const status = await getMySubscriptionStatus(session.accessToken);
-        if (!status.aiAnalysisEnabled) {
-          setMode('gate');
-          setLoading(false);
-          return;
-        }
-
-        // Check if navigated from ResumeEditPage with result
-        if (location.state?.result) {
-          setResult(location.state.result);
-          setMode('results');
-        } else {
-          setMode('upload');
-          // Fetch history
-          const hist = await getAiAnalysisHistory(session.accessToken);
-          setHistory(hist);
-        }
-      } catch (err) {
-        console.error('Failed to initialize AI Analysis page:', err);
-        setError(t('aiAnalysis.loadError'));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [session, location.state, navigate]);
+    // Check if navigated from ResumeEditPage with a result already attached
+    if (location.state?.result) {
+      setResult(location.state.result);
+      setMode('results');
+    } else {
+      setMode('upload');
+    }
+  }, [statusLoading, subStatus, location.state]);
 
   const handleFileSelect = async (file: File) => {
+    const session = loadSession();
     if (!session) return;
 
-    // Validate: PDF only, max 10MB
     if (file.type !== 'application/pdf') {
       setError(t('aiAnalysis.dropzoneMax'));
       return;
@@ -83,6 +69,8 @@ export default function AiAnalysisPage() {
       const analysisResult = await analyzeResumePdf(file, session.accessToken, i18n.language);
       setResult(analysisResult);
       setMode('results');
+      // Invalidate history cache so the new entry appears next time upload view is shown
+      queryClient.invalidateQueries({ queryKey: AI_ANALYSIS_HISTORY_KEY });
     } catch (err: any) {
       setError(err.message || t('aiAnalysis.loadError'));
     } finally {
@@ -91,6 +79,7 @@ export default function AiAnalysisPage() {
   };
 
   const handleHistoryClick = async (item: AiAnalysisHistoryItem) => {
+    const session = loadSession();
     if (!session) return;
     setLoadingHistoryId(item.id);
     try {
@@ -110,7 +99,7 @@ export default function AiAnalysisPage() {
     setError('');
   };
 
-  if (loading) {
+  if (statusLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -140,6 +129,7 @@ export default function AiAnalysisPage() {
             onFileSelect={handleFileSelect}
             uploading={uploading}
             history={history}
+            historyLoading={historyLoading}
             onHistoryClick={handleHistoryClick}
             loadingHistoryId={loadingHistoryId}
             error={error}
@@ -171,14 +161,9 @@ function SubscriptionGateView({ navigate, t }: { navigate: any; t: any }) {
         </div>
         <div className="space-y-2">
           <h2 className="text-xl font-semibold">{t('aiAnalysis.gateTitle')}</h2>
-          <p className="text-muted-foreground text-sm">
-            {t('aiAnalysis.gateDesc')}
-          </p>
+          <p className="text-muted-foreground text-sm">{t('aiAnalysis.gateDesc')}</p>
         </div>
-        <Button
-          onClick={() => navigate('/settings/subscription')}
-          className="w-full"
-        >
+        <Button onClick={() => navigate('/settings/subscription')} className="w-full">
           {t('aiAnalysis.upgradeNow')}
         </Button>
       </div>
@@ -190,13 +175,14 @@ interface UploadViewProps extends ViewProps {
   onFileSelect: (file: File) => void;
   uploading: boolean;
   history: AiAnalysisHistoryItem[];
+  historyLoading: boolean;
   onHistoryClick: (item: AiAnalysisHistoryItem) => void;
   loadingHistoryId: number | null;
   error: string;
 }
 
 function UploadView({
-  onFileSelect, uploading, history, onHistoryClick, loadingHistoryId, error, t,
+  onFileSelect, uploading, history, historyLoading, onHistoryClick, loadingHistoryId, error, t,
 }: UploadViewProps) {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -204,11 +190,8 @@ function UploadView({
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -216,15 +199,11 @@ function UploadView({
     e.stopPropagation();
     setDragActive(false);
     const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      onFileSelect(files[0]);
-    }
+    if (files && files.length > 0) onFileSelect(files[0]);
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      onFileSelect(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files.length > 0) onFileSelect(e.target.files[0]);
   };
 
   return (
@@ -254,9 +233,7 @@ function UploadView({
         {uploading ? (
           <div className="space-y-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              {t('aiAnalysis.analyzing')}
-            </p>
+            <p className="text-sm text-muted-foreground">{t('aiAnalysis.analyzing')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -273,14 +250,16 @@ function UploadView({
       {error && (
         <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex gap-3">
           <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-destructive">{error}</p>
-          </div>
+          <p className="text-sm font-medium text-destructive">{error}</p>
         </div>
       )}
 
       {/* History List */}
-      {history.length > 0 && (
+      {historyLoading ? (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : history.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             {t('aiAnalysis.history')}
@@ -308,9 +287,7 @@ function UploadView({
                     )}
                     {item.totalScore !== null && (
                       <div className="text-right">
-                        <p className="text-lg font-bold text-primary">
-                          {item.totalScore}
-                        </p>
+                        <p className="text-lg font-bold text-primary">{item.totalScore}</p>
                         <p className="text-xs text-muted-foreground">Score</p>
                       </div>
                     )}
@@ -347,7 +324,6 @@ function ResultsView({ result, onNewAnalysis, t }: ResultsViewProps) {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
-      {/* Header with "Run New Analysis" button */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">{t('aiAnalysis.resultsTitle')}</h2>
@@ -356,21 +332,14 @@ function ResultsView({ result, onNewAnalysis, t }: ResultsViewProps) {
             {new Date(result.createdAt).toLocaleDateString()}
           </p>
         </div>
-        <button
-          onClick={onNewAnalysis}
-          className="text-primary hover:underline text-sm font-medium"
-        >
+        <button onClick={onNewAnalysis} className="text-primary hover:underline text-sm font-medium">
           {t('aiAnalysis.newAnalysis')}
         </button>
       </div>
 
       {/* Total Score Circle */}
       <div className="flex justify-center">
-        <div
-          className={`relative w-32 h-32 rounded-full flex items-center justify-center ${getTotalScoreBg(
-            result.totalScore,
-          )}`}
-        >
+        <div className={`relative w-32 h-32 rounded-full flex items-center justify-center ${getTotalScoreBg(result.totalScore)}`}>
           <div className="text-center">
             <div className={`text-4xl font-bold ${getTotalScoreColor(result.totalScore)}`}>
               {result.totalScore ?? '—'}
@@ -380,17 +349,11 @@ function ResultsView({ result, onNewAnalysis, t }: ResultsViewProps) {
         </div>
       </div>
 
-      {/* Component Scores (bars) */}
-      {(result.structureScore !== null ||
-        result.grammarScore !== null ||
-        result.impactScore !== null) && (
+      {/* Component Scores */}
+      {(result.structureScore !== null || result.grammarScore !== null || result.impactScore !== null) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {result.structureScore !== null && (
-            <ScoreBar
-              label={t('aiAnalysis.structure')}
-              score={result.structureScore}
-              color="bg-blue-500"
-            />
+            <ScoreBar label={t('aiAnalysis.structure')} score={result.structureScore} color="bg-blue-500" />
           )}
           {result.grammarScore !== null && (
             <ScoreBar label={t('aiAnalysis.grammar')} score={result.grammarScore} color="bg-emerald-500" />
@@ -410,13 +373,8 @@ function ResultsView({ result, onNewAnalysis, t }: ResultsViewProps) {
           </h3>
           <ol className="space-y-2">
             {result.suggestions.map((suggestion, idx) => (
-              <li
-                key={idx}
-                className="p-3 bg-muted/50 rounded-lg text-sm flex gap-3"
-              >
-                <span className="font-medium text-muted-foreground flex-shrink-0">
-                  {idx + 1}.
-                </span>
+              <li key={idx} className="p-3 bg-muted/50 rounded-lg text-sm flex gap-3">
+                <span className="font-medium text-muted-foreground flex-shrink-0">{idx + 1}.</span>
                 <span>{suggestion}</span>
               </li>
             ))}
@@ -452,7 +410,6 @@ function ResultsView({ result, onNewAnalysis, t }: ResultsViewProps) {
         </div>
       )}
 
-      {/* Action button */}
       <div>
         <Button onClick={onNewAnalysis} variant="outline" className="w-full sm:w-auto">
           {t('aiAnalysis.analyzeAnother')}
@@ -462,15 +419,7 @@ function ResultsView({ result, onNewAnalysis, t }: ResultsViewProps) {
   );
 }
 
-function ScoreBar({
-  label,
-  score,
-  color,
-}: {
-  label: string;
-  score: number;
-  color: string;
-}) {
+function ScoreBar({ label, score, color }: { label: string; score: number; color: string }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">

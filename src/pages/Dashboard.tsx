@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getMySubscriptionStatus, SubscriptionPlanType } from '@/services/subscriptionService';
+import { SubscriptionPlanType } from '@/services/subscriptionService';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 
 // Helper to convert enum to readable string
 function getPlanTypeName(planType: SubscriptionPlanType): string {
@@ -56,14 +57,8 @@ const DashboardPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const firstName = profile?.fullName?.split(' ')[0] || 'Foydalanuvchi';
-  const [currentPlan, setCurrentPlan] = useState('Free');
-
-  useEffect(() => {
-    getMySubscriptionStatus()
-      .then((s) => setCurrentPlan(getPlanTypeName(s.planType)))
-      .catch(() => null);
-  }, []);
-
+  const { data: subStatus } = useSubscriptionStatus();
+  const currentPlan = getPlanTypeName(subStatus?.planType ?? SubscriptionPlanType.Free);
   const isPro = currentPlan !== 'Free';
 
   return (

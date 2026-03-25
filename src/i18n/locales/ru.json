@@ -355,5 +355,29 @@
     "saveHrProfile": "Сохранить HR-профиль",
     "hrProfileSaved": "HR-профиль успешно обновлён!",
     "hrProfileError": "Не удалось обновить HR-профиль."
+  },
+  "aiAnalysis": {
+    "pageTitle": "AI Анализ",
+    "dropzone": "Перетащите PDF резюме сюда",
+    "dropzoneOr": "или нажмите для выбора",
+    "dropzoneMax": "Макс 10МБ, только PDF",
+    "analyzing": "Анализируем резюме... (до 30 секунд)",
+    "history": "История анализов",
+    "pdfUpload": "Загрузка PDF",
+    "resultsTitle": "Результаты анализа",
+    "newAnalysis": "Новый анализ",
+    "analyzeAnother": "Анализировать другое резюме",
+    "overallScore": "Общий балл",
+    "structure": "Структура",
+    "grammar": "Грамматика",
+    "impact": "Воздействие",
+    "suggestions": "Рекомендации",
+    "skillsToLearn": "Навыки для развития",
+    "model": "Модель",
+    "tokensUsed": "Использовано токенов",
+    "loadError": "Не удалось загрузить результат",
+    "gateTitle": "AI анализ требует тарифа Pro",
+    "gateDesc": "Разблокируйте AI-анализ резюме для получения структурированной обратной связи.",
+    "upgradeNow": "Улучшить тариф"
   }
 }

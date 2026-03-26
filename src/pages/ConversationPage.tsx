@@ -9,7 +9,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { resolveMediaUrl } from '@/lib/utils';
 import { ArrowLeft, Send } from 'lucide-react';
 import { onHubEvent } from '@/services/signalRService';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday, isSameDay } from 'date-fns';
+
+function dateSeparatorLabel(date: Date): string {
+  if (isToday(date)) return 'Today';
+  if (isYesterday(date)) return 'Yesterday';
+  return format(date, 'd MMMM yyyy');
+}
+
+function DateSeparator({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 my-2">
+      <div className="flex-1 h-px bg-border" />
+      <span className="text-[10px] font-medium text-muted-foreground px-1 shrink-0">{label}</span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  );
+}
 
 export default function ConversationPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -133,21 +149,27 @@ export default function ConversationPage() {
             ))}
           </div>
         ) : (
-          messages.map(msg => {
+          messages.map((msg, i) => {
             const isMe = msg.senderId === myId;
+            const msgDate = new Date(msg.createdAt);
+            const prevDate = i > 0 ? new Date(messages[i - 1].createdAt) : null;
+            const showSeparator = !prevDate || !isSameDay(msgDate, prevDate);
             return (
-              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[72%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    isMe
-                      ? 'bg-primary text-primary-foreground rounded-br-sm'
-                      : 'bg-muted rounded-bl-sm'
-                  }`}
-                >
-                  <p>{msg.body}</p>
-                  <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                    {format(new Date(msg.createdAt), 'HH:mm')}
-                  </p>
+              <div key={msg.id}>
+                {showSeparator && <DateSeparator label={dateSeparatorLabel(msgDate)} />}
+                <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[72%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      isMe
+                        ? 'bg-primary text-primary-foreground rounded-br-sm'
+                        : 'bg-muted rounded-bl-sm'
+                    }`}
+                  >
+                    <p>{msg.body}</p>
+                    <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                      {format(msgDate, 'HH:mm')}
+                    </p>
+                  </div>
                 </div>
               </div>
             );

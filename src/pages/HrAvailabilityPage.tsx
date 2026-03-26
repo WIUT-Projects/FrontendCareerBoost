@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,8 +38,6 @@ function isSameDay(a: Date, b: Date): boolean {
   return toYMD(a) === toYMD(b);
 }
 
-const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_FULL  = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
@@ -60,6 +59,7 @@ function StatusBadge({ status }: { status: string | null }) {
 // ─── Session row ─────────────────────────────────────────────────────────────
 
 function SessionRow({ b }: { b: BookingItem }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const upcoming = isUpcoming(b.scheduledAt);
   const color    = statusColor(b.status);
@@ -121,7 +121,7 @@ function SessionRow({ b }: { b: BookingItem }) {
           onClick={() => window.open(b.googleMeetLink!, '_blank')}
         >
           <Video className="h-3.5 w-3.5" />
-          Join
+          {t('availability.join')}
         </Button>
       )}
     </div>
@@ -131,7 +131,7 @@ function SessionRow({ b }: { b: BookingItem }) {
 // ─── Day strip cell ───────────────────────────────────────────────────────────
 
 function DayCell({
-  date, sessions, selected, today, isPast, onClick,
+  date, sessions, selected, today, isPast, onClick, dayNames,
 }: {
   date: Date;
   sessions: BookingItem[];
@@ -139,6 +139,7 @@ function DayCell({
   today: boolean;
   isPast: boolean;
   onClick: () => void;
+  dayNames: string[];
 }) {
   const approved = sessions.filter(s => s.status === 'Approved').length;
   const pending  = sessions.filter(s => s.status === 'Pending').length;
@@ -159,7 +160,7 @@ function DayCell({
         }`}
     >
       <span className="text-[10px] font-medium uppercase tracking-wide opacity-70">
-        {DAY_NAMES[dayIdx]}
+        {dayNames[dayIdx]}
       </span>
       <span className="text-sm font-bold leading-none">{date.getDate()}</span>
 
@@ -182,7 +183,29 @@ function DayCell({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function HrAvailabilityPage() {
+  const { t } = useTranslation();
   const { session } = useAuth();
+
+  // Localized day names
+  const DAY_NAMES = [
+    t('availability.dayNames.mon'),
+    t('availability.dayNames.tue'),
+    t('availability.dayNames.wed'),
+    t('availability.dayNames.thu'),
+    t('availability.dayNames.fri'),
+    t('availability.dayNames.sat'),
+    t('availability.dayNames.sun'),
+  ];
+  const DAY_FULL = [
+    t('availability.dayNamesFull.monday'),
+    t('availability.dayNamesFull.tuesday'),
+    t('availability.dayNamesFull.wednesday'),
+    t('availability.dayNamesFull.thursday'),
+    t('availability.dayNamesFull.friday'),
+    t('availability.dayNamesFull.saturday'),
+    t('availability.dayNamesFull.sunday'),
+  ];
+
   const [allBookings, setAllBookings] = useState<BookingItem[]>([]);
   const [loading, setLoading]         = useState(true);
   // 14-day window: past 7 days + next 7 days, navigatable by week
@@ -198,7 +221,7 @@ export default function HrAvailabilityPage() {
     setLoading(true);
     getHrBookings(session.access_token)
       .then(setAllBookings)
-      .catch(() => toast.error('Failed to load schedule'))
+      .catch(() => toast.error(t('availability.loadError')))
       .finally(() => setLoading(false));
   }, [session?.access_token]);
 
@@ -238,17 +261,17 @@ export default function HrAvailabilityPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Schedule</h1>
-          <p className="text-muted-foreground text-sm mt-1">Weekly overview of your interview sessions</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('availability.title')}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t('availability.subtitle')}</p>
         </div>
 
         {/* Range stats */}
         {!loading && (
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: '14 days',  value: weekSessions.length, color: 'text-foreground' },
-              { label: 'Approved', value: weekApproved,        color: 'text-emerald-600' },
-              { label: 'Pending',  value: weekPending,         color: 'text-amber-600'   },
+              { label: t('availability.dayRange'),  value: weekSessions.length, color: 'text-foreground' },
+              { label: t('availability.approved'), value: weekApproved,        color: 'text-emerald-600' },
+              { label: t('availability.pending'),  value: weekPending,         color: 'text-amber-600'   },
             ].map(s => (
               <div key={s.label} className="bg-card border rounded-2xl px-4 py-3 text-center">
                 <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -285,7 +308,7 @@ export default function HrAvailabilityPage() {
                   }}
                   className="text-xs text-primary hover:underline ml-1"
                 >
-                  Today
+                  {t('availability.today')}
                 </button>
               )}
             </div>
@@ -320,6 +343,7 @@ export default function HrAvailabilityPage() {
                   today={isSameDay(d, today)}
                   isPast={d < today && !isSameDay(d, today)}
                   onClick={() => setSelectedDay(new Date(d))}
+                  dayNames={DAY_NAMES}
                 />
               ))}
             </div>
@@ -328,8 +352,8 @@ export default function HrAvailabilityPage() {
           {/* Legend */}
           <div className="flex items-center gap-4 pt-1 justify-center">
             {[
-              { color: 'bg-emerald-500', label: 'Approved' },
-              { color: 'bg-amber-500',  label: 'Pending'  },
+              { color: 'bg-emerald-500', label: t('availability.legend.approved') },
+              { color: 'bg-amber-500',  label: t('availability.legend.pending')  },
             ].map(l => (
               <div key={l.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className={`h-2 w-2 rounded-full ${l.color}`} />
@@ -343,14 +367,14 @@ export default function HrAvailabilityPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm">
-              {isSameDay(selectedDay, today) ? 'Today' : DAY_FULL[selectedDayIdx]}
+              {isSameDay(selectedDay, today) ? t('availability.todayShort') : DAY_FULL[selectedDayIdx]}
               <span className="text-muted-foreground font-normal ml-2">
                 {selectedDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </h2>
             {selectedSessions.length > 0 && (
               <span className="text-xs text-muted-foreground">
-                {selectedSessions.length} session{selectedSessions.length !== 1 ? 's' : ''}
+                {t('availability.sessionLabel', { count: selectedSessions.length })}
               </span>
             )}
           </div>
@@ -371,9 +395,9 @@ export default function HrAvailabilityPage() {
           ) : selectedSessions.length === 0 ? (
             <div className="bg-card border rounded-2xl p-10 text-center">
               <AlertCircle className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
-              <p className="text-sm font-medium text-muted-foreground">No sessions this day</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('availability.noSessions')}</p>
               <p className="text-xs text-muted-foreground/60 mt-1">
-                Select another day or check the Interviews page
+                {t('availability.noSessionsHint')}
               </p>
             </div>
           ) : (
@@ -390,7 +414,7 @@ export default function HrAvailabilityPage() {
           <div className="bg-destructive/5 border border-destructive/20 rounded-2xl px-4 py-3 flex items-center gap-3">
             <XCircle className="h-4 w-4 text-destructive shrink-0" />
             <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-destructive">{weekRejected}</span> session{weekRejected !== 1 ? 's' : ''} rejected this week
+              <span className="font-semibold text-destructive">{weekRejected}</span> {t('availability.rejectedLabel', { count: weekRejected })}
             </p>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getConversations } from '@/services/messageService';
@@ -11,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { onHubEvent } from '@/services/signalRService';
 
 export default function MessagesPage() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const navigate = useNavigate();
 
@@ -43,13 +45,13 @@ export default function MessagesPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold mb-5">Messages</h1>
+      <h1 className="text-xl font-bold mb-5">{t('messages.title')}</h1>
 
       {conversations.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No conversations yet</p>
-          <p className="text-sm mt-1">Start a conversation from an HR expert's profile.</p>
+          <p className="font-medium">{t('messages.noConversations')}</p>
+          <p className="text-sm mt-1">{t('messages.startConversation')}</p>
         </div>
       ) : (
         <div className="divide-y">
@@ -80,7 +82,7 @@ export default function MessagesPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline">
                     <p className={`text-sm ${conv.unreadCount > 0 ? 'font-bold' : 'font-medium'} truncate`}>
-                      {conv.partnerName ?? 'Unknown'}
+                      {conv.partnerName ?? t('messages.unknownUser')}
                     </p>
                     {conv.lastMessageAt && (
                       <span className="text-[11px] text-muted-foreground shrink-0 ml-2">

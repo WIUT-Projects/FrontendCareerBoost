@@ -19,10 +19,6 @@ import { toast } from 'sonner';
 
 const PAGE_SIZE = 12;
 
-const SPECIALIZATION_FILTERS = [
-  'All', 'IT', 'Finance', 'Management', 'Marketing', 'Design', 'Sales', 'HR',
-];
-
 // ─── Rating stars ─────────────────────────────────────────────────────────────
 
 function Stars({ rating }: { rating: number | null }) {
@@ -42,6 +38,7 @@ function Stars({ rating }: { rating: number | null }) {
 // ─── HR Expert Card ────────────────────────────────────────────────────────────
 
 function HrCard({ expert }: { expert: HrExpertItem }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const chips = getSpecializationChips(expert.specializations);
 
@@ -82,7 +79,7 @@ function HrCard({ expert }: { expert: HrExpertItem }) {
         {/* Rating + reviews */}
         <div className="flex items-center justify-between">
           <Stars rating={expert.avgRating} />
-          <span className="text-xs text-muted-foreground">{expert.totalReviews} reviews</span>
+          <span className="text-xs text-muted-foreground">{expert.totalReviews} {t('hrDirectory.reviews')}</span>
         </div>
 
         {/* Specialization chips */}
@@ -105,7 +102,7 @@ function HrCard({ expert }: { expert: HrExpertItem }) {
         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-auto">
           {expert.yearsExp != null && (
             <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />{expert.yearsExp} yrs
+              <Clock className="h-3.5 w-3.5" />{expert.yearsExp} {t('hrDirectory.years')}
             </span>
           )}
           <span className="flex items-center gap-1 ml-auto font-medium text-foreground">
@@ -124,7 +121,7 @@ function HrCard({ expert }: { expert: HrExpertItem }) {
           onClick={e => { e.stopPropagation(); navigate(`/messages/${expert.id}`); }}
         >
           <MessageSquare className="h-3.5 w-3.5" />
-          Message
+          {t('hrDirectory.message')}
         </Button>
         <Button
           size="sm"
@@ -132,7 +129,7 @@ function HrCard({ expert }: { expert: HrExpertItem }) {
           onClick={e => { e.stopPropagation(); navigate(`/hr/${expert.id}`); }}
         >
           <CalendarPlus className="h-3.5 w-3.5" />
-          Book
+          {t('hrDirectory.book')}
         </Button>
       </div>
     </div>
@@ -173,6 +170,18 @@ function HrCardSkeleton() {
 export default function HrDirectoryPage() {
   const { t } = useTranslation();
 
+  // Localized specialization filters
+  const SPECIALIZATION_FILTERS = [
+    t('hrDirectory.specializations.all'),
+    t('hrDirectory.specializations.it'),
+    t('hrDirectory.specializations.finance'),
+    t('hrDirectory.specializations.management'),
+    t('hrDirectory.specializations.marketing'),
+    t('hrDirectory.specializations.design'),
+    t('hrDirectory.specializations.sales'),
+    t('hrDirectory.specializations.hr'),
+  ];
+
   const [experts,       setExperts]       = useState<HrExpertItem[]>([]);
   const [totalCount,    setTotalCount]    = useState(0);
   const [pageIndex,     setPageIndex]     = useState(1);   // 1-based (backend convention)
@@ -181,7 +190,7 @@ export default function HrDirectoryPage() {
   const [hasMore,       setHasMore]       = useState(false);
   const [search,        setSearch]        = useState('');
   const [activeSearch,  setActiveSearch]  = useState('');
-  const [specialFilter, setSpecialFilter] = useState('All');
+  const [specialFilter, setSpecialFilter] = useState(t('hrDirectory.specializations.all'));
 
   // Initial / filter-change load — always resets the list
   useEffect(() => {
@@ -190,7 +199,7 @@ export default function HrDirectoryPage() {
     setLoading(true);
     getHrExperts({
       search:         activeSearch || undefined,
-      specialization: specialFilter === 'All' ? undefined : specialFilter,
+      specialization: specialFilter === SPECIALIZATION_FILTERS[0] ? undefined : specialFilter,
       pageIndex:      1,
       pageSize:       PAGE_SIZE,
     })
@@ -199,7 +208,7 @@ export default function HrDirectoryPage() {
         setTotalCount(res.totalCount);
         setHasMore(1 * PAGE_SIZE < res.totalCount);
       })
-      .catch(() => toast.error('Failed to load HR experts'))
+      .catch(() => toast.error(t('hrDirectory.loadError')))
       .finally(() => setLoading(false));
   }, [activeSearch, specialFilter]);
 
@@ -209,7 +218,7 @@ export default function HrDirectoryPage() {
     try {
       const res = await getHrExperts({
         search:         activeSearch || undefined,
-        specialization: specialFilter === 'All' ? undefined : specialFilter,
+        specialization: specialFilter === SPECIALIZATION_FILTERS[0] ? undefined : specialFilter,
         pageIndex:      next,
         pageSize:       PAGE_SIZE,
       });
@@ -218,7 +227,7 @@ export default function HrDirectoryPage() {
       setHasMore(next * PAGE_SIZE < res.totalCount);
       setPageIndex(next);
     } catch {
-      toast.error('Failed to load more experts');
+      toast.error(t('hrDirectory.loadMoreError'));
     } finally {
       setLoadingMore(false);
     }
@@ -238,9 +247,9 @@ export default function HrDirectoryPage() {
 
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold font-display">HR Expert Directory</h1>
+          <h1 className="text-2xl font-bold font-display">{t('hrDirectory.title')}</h1>
           <p className="text-muted-foreground text-sm">
-            Find verified HR professionals for resume reviews, interview coaching, and career guidance.
+            {t('hrDirectory.subtitle')}
           </p>
         </div>
 
@@ -249,14 +258,14 @@ export default function HrDirectoryPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or title..."
+              placeholder={t('hrDirectory.searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               className="pl-9"
             />
           </div>
-          <Button onClick={handleSearch}>Search</Button>
+          <Button onClick={handleSearch}>{t('hrDirectory.searchBtn')}</Button>
         </div>
 
         {/* Specialization filters */}
@@ -280,7 +289,7 @@ export default function HrDirectoryPage() {
         {/* Results count */}
         {!loading && (
           <p className="text-sm text-muted-foreground">
-            {totalCount} expert{totalCount !== 1 ? 's' : ''} found
+            {t('hrDirectory.expertCount', { count: totalCount })}
           </p>
         )}
 
@@ -293,8 +302,8 @@ export default function HrDirectoryPage() {
               : (
                 <div className="col-span-full py-20 text-center text-muted-foreground">
                   <ShieldCheck className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">No HR experts found</p>
-                  <p className="text-sm mt-1">Try a different search or specialization.</p>
+                  <p className="font-medium">{t('hrDirectory.noExperts')}</p>
+                  <p className="text-sm mt-1">{t('hrDirectory.noExpertsHint')}</p>
                 </div>
               )
           }
@@ -310,8 +319,8 @@ export default function HrDirectoryPage() {
               className="gap-2 min-w-32"
             >
               {loadingMore
-                ? <><Loader2 className="h-4 w-4 animate-spin" />Loading...</>
-                : 'Load More'
+                ? <><Loader2 className="h-4 w-4 animate-spin" />{t('hrDirectory.loading')}</>
+                : t('hrDirectory.loadMore')
               }
             </Button>
           </div>

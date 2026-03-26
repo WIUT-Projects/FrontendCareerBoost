@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -63,12 +64,13 @@ interface BookingModalProps {
   open: boolean;
   expert: HrExpertItem;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (bookingId: number) => void;
 }
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
 function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
+  const { t } = useTranslation();
   const { session } = useAuth();
 
   const [date,     setDate]     = useState('');
@@ -87,21 +89,21 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
     d < 60 ? `${d}m` : `${Math.floor(d / 60)}h${d % 60 ? ` ${d % 60}m` : ''}`;
 
   const handleBook = async () => {
-    if (!date || !time) { toast.error('Please select a date and time'); return; }
+    if (!date || !time) { toast.error(t('booking.selectDateAndTime')); return; }
     const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
-    if (new Date(scheduledAt) <= new Date()) { toast.error('Scheduled time must be in the future'); return; }
-    if (!session?.access_token) { toast.error('You must be logged in'); return; }
+    if (new Date(scheduledAt) <= new Date()) { toast.error(t('booking.timeMustBeFuture')); return; }
+    if (!session?.access_token) { toast.error(t('booking.mustBeLoggedIn')); return; }
     setLoading(true);
     try {
-      await bookHrExpert(session.access_token, {
+      const booking = await bookHrExpert(session.access_token, {
         hrExpertId: expert.id, scheduledAt,
         durationMinutes: parseInt(duration),
         notes: notes.trim() || undefined,
       });
-      toast.success('Session booked successfully!');
-      onSuccess();
+      toast.success(t('booking.bookingSuccess'));
+      onSuccess(booking.id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Booking failed');
+      toast.error(err instanceof Error ? err.message : t('booking.bookingFailed'));
     } finally {
       setLoading(false);
     }
@@ -112,13 +114,14 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-[480px] gap-0 p-0 rounded-2xl shadow-2xl">
+        <VisuallyHidden><DialogTitle>{t('booking.title')}</DialogTitle></VisuallyHidden>
 
         {/* ── Title bar ── */}
         <div className="flex items-center gap-2.5 px-5 pt-5 pb-4 border-b">
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <CalendarPlus className="h-4 w-4 text-primary" />
           </div>
-          <span className="font-semibold text-base">Book a Session</span>
+          <span className="font-semibold text-base">{t('booking.title')}</span>
         </div>
 
         <div className="px-5 pt-4 pb-5 space-y-4">
@@ -138,7 +141,7 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
               </div>
             </div>
             <div className="mt-2.5 pt-2.5 border-t flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Session price</span>
+              <span className="text-xs text-muted-foreground">{t('booking.sessionPrice')}</span>
               <span className="text-sm font-bold text-primary">{formatPrice(expert.reviewPriceUzs)}</span>
             </div>
           </div>
@@ -146,7 +149,7 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
           {/* ── Date & Time ── */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Date</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t('booking.date')}</p>
               <Input
                 type="date"
                 min={today}
@@ -156,7 +159,7 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Time</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t('booking.time')}</p>
               <Input
                 type="time"
                 value={time}
@@ -168,7 +171,7 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
 
           {/* ── Duration pills ── */}
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Duration</p>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t('booking.duration')}</p>
             <div className="grid grid-cols-5 gap-1.5">
               {DURATION_OPTIONS.map(d => (
                 <button
@@ -191,10 +194,10 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
           {/* ── Notes ── */}
           <div className="space-y-1.5">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Notes <span className="normal-case font-normal text-muted-foreground/70">(optional)</span>
+              {t('booking.notes')} <span className="normal-case font-normal text-muted-foreground/70">{t('booking.notesOptional')}</span>
             </p>
             <Textarea
-              placeholder="Tell the expert what you'd like to focus on..."
+              placeholder={t('booking.notesPlaceholder')}
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
@@ -205,11 +208,11 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
           {/* ── Footer ── */}
           <div className="flex gap-2 pt-1">
             <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1 rounded-xl h-10">
-              Cancel
+              {t('booking.cancel')}
             </Button>
             <Button onClick={handleBook} disabled={loading} className="flex-[2] rounded-xl h-10 gap-2 font-semibold">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              {loading ? 'Booking…' : 'Confirm Booking'}
+              {loading ? t('booking.booking') : t('booking.confirmBooking')}
             </Button>
           </div>
         </div>
@@ -223,6 +226,7 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
 
 export default function HrProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
 
@@ -276,7 +280,7 @@ export default function HrProfilePage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
         <ShieldCheck className="h-12 w-12 opacity-20" />
-        <p className="font-medium">HR Expert not found</p>
+        <p className="font-medium">{t('booking.expertNotFound')}</p>
       </div>
     );
   }
@@ -310,14 +314,14 @@ export default function HrProfilePage() {
                   onClick={() => navigate(`/messages/${expert.id}`)}
                 >
                   <MessageSquare className="h-4 w-4" />
-                  Message
+                  {t('booking.message')}
                 </Button>
                 <Button
                   size="sm"
                   className="gap-1.5"
                   onClick={() => {
                     if (!isAuthenticated) {
-                      toast.error('Please log in to book a session');
+                      toast.error(t('booking.pleaseLoginToBook'));
                       navigate('/login');
                       return;
                     }
@@ -325,7 +329,7 @@ export default function HrProfilePage() {
                   }}
                 >
                   <CalendarPlus className="h-4 w-4" />
-                  Book Session
+                  {t('booking.bookSession')}
                 </Button>
               </div>
             </div>
@@ -338,7 +342,7 @@ export default function HrProfilePage() {
               {expert.isVerified && (
                 <Badge variant="secondary" className="gap-1 text-primary bg-primary/10 border-primary/20">
                   <ShieldCheck className="h-3 w-3" />
-                  Verified
+                  {t('booking.verified')}
                 </Badge>
               )}
             </div>
@@ -352,7 +356,7 @@ export default function HrProfilePage() {
             <div className="flex items-center gap-3 mt-3">
               <Stars rating={expert.avgRating} size="lg" />
               <span className="text-sm text-muted-foreground">
-                {expert.totalReviews} review{expert.totalReviews !== 1 ? 's' : ''}
+                {expert.totalReviews} {expert.totalReviews !== 1 ? t('booking.reviewPlural') : t('booking.reviewSingular')}
               </span>
             </div>
 
@@ -372,16 +376,16 @@ export default function HrProfilePage() {
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3">
           <StatCard
-            label="Experience"
+            label={t('booking.experience')}
             value={expert.yearsExp != null ? (
               <span className="flex items-center justify-center gap-1">
                 <Clock className="h-4 w-4 text-primary" />
-                {expert.yearsExp} yrs
+                {expert.yearsExp} {t('booking.years')}
               </span>
             ) : '—'}
           />
           <StatCard
-            label="Session price"
+            label={t('booking.sessionPrice')}
             value={
               <span className="flex items-center justify-center gap-1">
                 <Briefcase className="h-4 w-4 text-primary" />
@@ -390,7 +394,7 @@ export default function HrProfilePage() {
             }
           />
           <StatCard
-            label="Reviews"
+            label={t('booking.reviews')}
             value={
               <span className="flex items-center justify-center gap-1">
                 <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
@@ -402,23 +406,23 @@ export default function HrProfilePage() {
 
         {/* What to expect section */}
         <div className="bg-card border rounded-2xl p-5 space-y-3">
-          <h2 className="font-semibold text-sm">What you can book</h2>
+          <h2 className="font-semibold text-sm">{t('booking.whatYouCanBook')}</h2>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">✓</span>
-              Resume review &amp; detailed written feedback
+              {t('booking.resumeReview')}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">✓</span>
-              1-on-1 interview coaching session
+              {t('booking.interviewCoaching')}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">✓</span>
-              Career guidance &amp; job search strategy
+              {t('booking.careerGuidance')}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">✓</span>
-              LinkedIn profile optimisation
+              {t('booking.linkedinOptimization')}
             </li>
           </ul>
         </div>
@@ -426,16 +430,16 @@ export default function HrProfilePage() {
         {/* CTA strip */}
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center justify-between gap-4">
           <div>
-            <p className="font-medium text-sm">Ready to get started?</p>
+            <p className="font-medium text-sm">{t('booking.readyToGetStarted')}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Book a session now — {formatPrice(expert.reviewPriceUzs)} per session
+              {t('booking.bookSessionNow', { price: formatPrice(expert.reviewPriceUzs) })}
             </p>
           </div>
           <Button
             className="gap-1.5 shrink-0"
             onClick={() => {
               if (!isAuthenticated) {
-                toast.error('Please log in to book a session');
+                toast.error(t('booking.pleaseLoginToBook'));
                 navigate('/login');
                 return;
               }
@@ -443,7 +447,7 @@ export default function HrProfilePage() {
             }}
           >
             <CalendarPlus className="h-4 w-4" />
-            Book Now
+            {t('booking.bookNow')}
           </Button>
         </div>
 
@@ -454,9 +458,9 @@ export default function HrProfilePage() {
         open={bookingOpen}
         expert={expert}
         onClose={() => setBookingOpen(false)}
-        onSuccess={() => {
+        onSuccess={(bookingId) => {
           setBookingOpen(false);
-          navigate('/interviews');
+          navigate(`/interviews/${bookingId}`);
         }}
       />
     </div>

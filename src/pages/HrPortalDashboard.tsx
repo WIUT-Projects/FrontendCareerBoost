@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ function todayStr() {
 // ─── Today session card ───────────────────────────────────────────────────────
 
 function TodaySessionCard({ b }: { b: BookingItem }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const initials = b.jobSeekerName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) ?? 'JS';
   const upcoming = isUpcoming(b.scheduledAt);
@@ -47,8 +49,8 @@ function TodaySessionCard({ b }: { b: BookingItem }) {
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTime(b.scheduledAt)}</span>
             <span>{b.durationMinutes} min</span>
             {upcoming
-              ? <Badge className="bg-emerald-500/15 text-emerald-600 border-0 text-[10px]">Upcoming</Badge>
-              : <Badge className="bg-muted text-muted-foreground border-0 text-[10px]">Done</Badge>
+              ? <Badge className="bg-emerald-500/15 text-emerald-600 border-0 text-[10px]">{t('hrDashboard.upcoming')}</Badge>
+              : <Badge className="bg-muted text-muted-foreground border-0 text-[10px]">{t('hrDashboard.done')}</Badge>
             }
           </div>
         </div>
@@ -75,6 +77,7 @@ function TodaySessionCard({ b }: { b: BookingItem }) {
 }
 
 export default function HrPortalDashboard() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const navigate    = useNavigate();
   const [todayBookings, setTodayBookings]   = useState<BookingItem[]>([]);
@@ -93,7 +96,7 @@ export default function HrPortalDashboard() {
         setTodayBookings(approved);
         setPendingCount(pending.length);
       })
-      .catch(() => toast.error('Failed to load dashboard'))
+      .catch(() => toast.error(t('hrDashboard.loadError')))
       .finally(() => setLoading(false));
   }, [session?.access_token]);
 
@@ -103,9 +106,9 @@ export default function HrPortalDashboard() {
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold font-display">HR Dashboard</h1>
+          <h1 className="text-2xl font-bold font-display">{t('hrDashboard.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Overview of your sessions and incoming requests
+            {t('hrDashboard.subtitle')}
           </p>
         </div>
 
@@ -119,10 +122,10 @@ export default function HrPortalDashboard() {
               <div className="h-8 w-8 rounded-xl bg-amber-500/15 flex items-center justify-center">
                 <AlertCircle className="h-4 w-4 text-amber-600" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Pending</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('hrDashboard.pending')}</span>
             </div>
             <p className="text-3xl font-bold">{loading ? '–' : pendingCount}</p>
-            <p className="text-xs text-muted-foreground mt-1">awaiting your response</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('hrDashboard.awaitingResponse')}</p>
           </div>
 
           <div
@@ -133,10 +136,10 @@ export default function HrPortalDashboard() {
               <div className="h-8 w-8 rounded-xl bg-emerald-500/15 flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-emerald-600" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Today</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('hrDashboard.today')}</span>
             </div>
             <p className="text-3xl font-bold">{loading ? '–' : todayBookings.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">sessions today</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('hrDashboard.sessionsToday')}</p>
           </div>
 
           <div
@@ -147,10 +150,10 @@ export default function HrPortalDashboard() {
               <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
                 <ClipboardList className="h-4 w-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Reviews</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('hrDashboard.reviews')}</span>
             </div>
             <p className="text-3xl font-bold">–</p>
-            <p className="text-xs text-muted-foreground mt-1">resume reviews queue</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('hrDashboard.resumeReviewsQueue')}</p>
           </div>
         </div>
 
@@ -159,7 +162,7 @@ export default function HrPortalDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
-              Today's Schedule
+              {t('hrDashboard.schedule')}
             </h2>
             <Button
               variant="ghost"
@@ -167,7 +170,7 @@ export default function HrPortalDashboard() {
               className="text-xs gap-1 text-muted-foreground"
               onClick={() => navigate('/hr-portal/interviews')}
             >
-              View all <ChevronRight className="h-3.5 w-3.5" />
+              {t('hrDashboard.viewAll')} <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>
 
@@ -186,8 +189,8 @@ export default function HrPortalDashboard() {
           ) : todayBookings.length === 0 ? (
             <div className="bg-card border rounded-2xl p-8 text-center text-muted-foreground">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm font-medium">No sessions today</p>
-              <p className="text-xs mt-1">Your approved sessions for today will appear here</p>
+              <p className="text-sm font-medium">{t('hrDashboard.noSessionsToday')}</p>
+              <p className="text-xs mt-1">{t('hrDashboard.approvedSessions')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -200,13 +203,13 @@ export default function HrPortalDashboard() {
 
         {/* Quick links */}
         <div>
-          <h2 className="text-base font-semibold mb-4">Quick Actions</h2>
+          <h2 className="text-base font-semibold mb-4">{t('hrDashboard.quickActions')}</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Session Requests', desc: 'Approve or reject bookings', url: '/hr-portal/interviews', icon: Calendar },
-              { label: 'Review Queue', desc: 'Resume reviews waiting', url: '/hr-portal/reviews', icon: ClipboardList },
-              { label: 'My Ratings', desc: 'Client feedback & stars', url: '/hr-portal/ratings', icon: Star },
-              { label: 'Availability', desc: 'Set your weekly hours', url: '/hr-portal/availability', icon: Clock },
+              { label: t('hrDashboard.actions.sessionRequests'), desc: t('hrDashboard.actions.sessionRequestsDesc'), url: '/hr-portal/interviews', icon: Calendar },
+              { label: t('hrDashboard.actions.reviewQueue'), desc: t('hrDashboard.actions.reviewQueueDesc'), url: '/hr-portal/reviews', icon: ClipboardList },
+              { label: t('hrDashboard.actions.myRatings'), desc: t('hrDashboard.actions.myRatingsDesc'), url: '/hr-portal/ratings', icon: Star },
+              { label: t('hrDashboard.actions.availability'), desc: t('hrDashboard.actions.availabilityDesc'), url: '/hr-portal/availability', icon: Clock },
             ].map(item => (
               <button
                 key={item.url}

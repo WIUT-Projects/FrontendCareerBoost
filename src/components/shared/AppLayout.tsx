@@ -1,6 +1,7 @@
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from './ThemeToggle';
@@ -16,10 +17,26 @@ import {
 } from '@/services/messageService';
 import { onHubEvent } from '@/services/signalRService';
 import { resolveMediaUrl } from '@/lib/utils';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, isToday, isYesterday, isSameDay } from 'date-fns';
+
+function dateSeparatorLabel(d: Date) {
+  if (isToday(d)) return 'Today';
+  if (isYesterday(d)) return 'Yesterday';
+  return format(d, 'd MMMM yyyy');
+}
+function PanelDateSep({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 my-1.5">
+      <div className="flex-1 h-px bg-border" />
+      <span className="text-[9px] font-medium text-muted-foreground shrink-0">{label}</span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  );
+}
 import { Button } from '@/components/ui/button';
 
 function HrMessagesPanel() {
+  const { t } = useTranslation();
   const { session, profile } = useAuth();
   const [open, setOpen]           = useState(false);
   const [convs, setConvs]         = useState<ConversationItem[]>([]);
@@ -111,13 +128,13 @@ function HrMessagesPanel() {
           {!active && (
             <>
               <SheetHeader className="px-4 py-3 border-b shrink-0">
-                <SheetTitle className="text-sm">Messages</SheetTitle>
+                <SheetTitle className="text-sm">{t('messages.title')}</SheetTitle>
               </SheetHeader>
               <div className="flex-1 overflow-y-auto">
                 {convs.length === 0 ? (
                   <div className="py-16 text-center text-xs text-muted-foreground">
                     <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    No conversations yet
+                    {t('messages.noConversations')}
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -143,7 +160,7 @@ function HrMessagesPanel() {
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-baseline">
                               <p className={`text-xs truncate ${c.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
-                                {c.partnerName ?? 'Unknown'}
+                                {c.partnerName ?? t('messages.unknownUser')}
                               </p>
                               {c.lastMessageAt && (
                                 <span className="text-[10px] text-muted-foreground ml-2 shrink-0">
@@ -183,17 +200,23 @@ function HrMessagesPanel() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-                {messages.map(msg => {
+                {messages.map((msg, i) => {
                   const isMe = msg.senderId === myId;
+                  const msgDate = new Date(msg.createdAt);
+                  const prevDate = i > 0 ? new Date(messages[i - 1].createdAt) : null;
+                  const showSep = !prevDate || !isSameDay(msgDate, prevDate);
                   return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
-                        isMe ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'
-                      }`}>
-                        <p>{msg.body}</p>
-                        <p className={`text-[9px] mt-0.5 ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                          {format(new Date(msg.createdAt), 'HH:mm')}
-                        </p>
+                    <div key={msg.id}>
+                      {showSep && <PanelDateSep label={dateSeparatorLabel(msgDate)} />}
+                      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
+                          isMe ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'
+                        }`}>
+                          <p>{msg.body}</p>
+                          <p className={`text-[9px] mt-0.5 ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                            {format(msgDate, 'HH:mm')}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
@@ -207,7 +230,7 @@ function HrMessagesPanel() {
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder="Write a message..."
+                  placeholder={t('messages.writeMessage')}
                   rows={1}
                   className="flex-1 resize-none rounded-xl border bg-muted/30 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 min-h-[36px] max-h-24"
                 />

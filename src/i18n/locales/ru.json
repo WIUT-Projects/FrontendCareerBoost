@@ -427,7 +427,9 @@
     "noConversations": "Сообщений ещё нет",
     "startConversation": "Начните разговор со страницы профиля HR-эксперта.",
     "unknownUser": "Неизвестно",
-    "writeMessage": "Напишите сообщение..."
+    "writeMessage": "Напишите сообщение...",
+    "today": "Сегодня",
+    "yesterday": "Вчера"
   },
   "hrDashboard": {
     "title": "HR Панель",

@@ -429,7 +429,9 @@
     "noConversations": "Suhbatlar hali yo'q",
     "startConversation": "HR ekspertning profilidan suhbat boshlang.",
     "unknownUser": "Noma'lum",
-    "writeMessage": "Xabar yozing..."
+    "writeMessage": "Xabar yozing...",
+    "today": "Bugun",
+    "yesterday": "Kecha"
   },
   "hrDashboard": {
     "title": "HR Boshqaruvi Paneli",

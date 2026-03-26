@@ -311,7 +311,7 @@ export default function HrProfilePage() {
                   variant="outline"
                   size="sm"
                   className="gap-1.5"
-                  onClick={() => navigate(`/messages/${expert.id}`)}
+                  onClick={() => navigate(`/messages/${expert.id}`, { state: { partnerName: expert.fullName, partnerAvatar: expert.avatarUrl } })}
                 >
                   <MessageSquare className="h-4 w-4" />
                   {t('booking.message')}

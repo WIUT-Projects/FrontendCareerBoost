@@ -430,7 +430,9 @@
     "noConversations": "No conversations yet",
     "startConversation": "Start a conversation from an HR expert's profile.",
     "unknownUser": "Unknown",
-    "writeMessage": "Write a message..."
+    "writeMessage": "Write a message...",
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "hrDashboard": {
     "title": "HR Dashboard",

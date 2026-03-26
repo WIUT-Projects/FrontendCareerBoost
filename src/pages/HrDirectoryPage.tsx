@@ -118,7 +118,7 @@ function HrCard({ expert }: { expert: HrExpertItem }) {
           variant="outline"
           size="sm"
           className="gap-1.5 text-xs"
-          onClick={e => { e.stopPropagation(); navigate(`/messages/${expert.id}`); }}
+          onClick={e => { e.stopPropagation(); navigate(`/messages/${expert.id}`, { state: { partnerName: expert.fullName, partnerAvatar: expert.avatarUrl } }); }}
         >
           <MessageSquare className="h-3.5 w-3.5" />
           {t('hrDirectory.message')}

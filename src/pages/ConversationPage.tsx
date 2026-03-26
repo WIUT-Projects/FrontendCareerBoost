@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getMessages, sendMessage, markAsRead, type MessageItem } from '@/services/messageService';
+import { getMessages, sendMessage, markAsRead, type MessageItem, type ConversationItem } from '@/services/messageService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,12 +10,7 @@ import { resolveMediaUrl } from '@/lib/utils';
 import { ArrowLeft, Send } from 'lucide-react';
 import { onHubEvent } from '@/services/signalRService';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
-
-function dateSeparatorLabel(date: Date): string {
-  if (isToday(date)) return 'Today';
-  if (isYesterday(date)) return 'Yesterday';
-  return format(date, 'd MMMM yyyy');
-}
+import { useTranslation } from 'react-i18next';
 
 function DateSeparator({ label }: { label: string }) {
   return (
@@ -28,14 +23,22 @@ function DateSeparator({ label }: { label: string }) {
 }
 
 export default function ConversationPage() {
+  const { t } = useTranslation();
   const { userId } = useParams<{ userId: string }>();
   const partnerId = Number(userId);
   const navigate = useNavigate();
+  const location = useLocation();
   const { session, profile } = useAuth();
   const queryClient = useQueryClient();
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const dateSeparatorLabel = (date: Date): string => {
+    if (isToday(date)) return t('messages.today');
+    if (isYesterday(date)) return t('messages.yesterday');
+    return format(date, 'd MMMM yyyy');
+  };
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['messages', partnerId],
@@ -110,10 +113,21 @@ export default function ConversationPage() {
     }
   };
 
-  // Derive partner name from messages
+  // Derive partner name: 1) navigation state, 2) conversations cache, 3) messages, 4) fallback
+  const navState = location.state as { partnerName?: string; partnerAvatar?: string } | null;
+  const cachedConversations = queryClient.getQueryData<ConversationItem[]>(['conversations']);
+  const cachedPartner = cachedConversations?.find(c => c.partnerId === partnerId);
   const partnerMsg = messages.find(m => m.senderId === partnerId);
-  const partnerName = partnerMsg?.senderName ?? `User ${partnerId}`;
-  const partnerAvatar = partnerMsg?.senderAvatar;
+
+  const partnerName =
+    navState?.partnerName ??
+    cachedPartner?.partnerName ??
+    partnerMsg?.senderName ??
+    `User ${partnerId}`;
+  const partnerAvatar =
+    navState?.partnerAvatar ??
+    cachedPartner?.partnerAvatar ??
+    partnerMsg?.senderAvatar;
   const partnerInitials = partnerName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
@@ -184,7 +198,7 @@ export default function ConversationPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Write a message..."
+          placeholder={t('messages.writeMessage')}
           rows={1}
           className="flex-1 resize-none rounded-xl border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 min-h-[40px] max-h-28"
         />

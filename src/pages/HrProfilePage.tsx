@@ -14,10 +14,11 @@ import {
   MessageSquare, CalendarPlus, Loader2, CheckCircle2,
 } from 'lucide-react';
 import {
-  getHrExpertById, bookHrExpert,
+  getHrExpertById,
   getSpecializationChips, formatPrice,
   type HrExpertItem,
 } from '@/services/hrExpertService';
+import { createBookingCheckout } from '@/services/bookingService';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn, resolveMediaUrl } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -73,11 +74,11 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
   const { t } = useTranslation();
   const { session } = useAuth();
 
-  const [date,     setDate]     = useState('');
-  const [time,     setTime]     = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
   const [duration, setDuration] = useState('60');
-  const [notes,    setNotes]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open) { setDate(''); setTime(''); setDuration('60'); setNotes(''); }
@@ -95,16 +96,15 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
     if (!session?.access_token) { toast.error(t('booking.mustBeLoggedIn')); return; }
     setLoading(true);
     try {
-      const booking = await bookHrExpert(session.access_token, {
-        hrExpertId: expert.id, scheduledAt,
+      const { checkoutUrl } = await createBookingCheckout(session.access_token, {
+        hrExpertId: expert.id,
+        scheduledAt,
         durationMinutes: parseInt(duration),
         notes: notes.trim() || undefined,
       });
-      toast.success(t('booking.bookingSuccess'));
-      onSuccess(booking.id);
+      window.location.href = checkoutUrl;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('booking.bookingFailed'));
-    } finally {
+      toast.error(err instanceof Error ? err.message : 'Booking failed');
       setLoading(false);
     }
   };
@@ -212,7 +212,7 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
             </Button>
             <Button onClick={handleBook} disabled={loading} className="flex-[2] rounded-xl h-10 gap-2 font-semibold">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              {loading ? t('booking.booking') : t('booking.confirmBooking')}
+              {loading ? 'Redirecting…' : 'Pay & Book'}
             </Button>
           </div>
         </div>
@@ -230,10 +230,10 @@ export default function HrProfilePage() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
 
-  const [expert,       setExpert]       = useState<HrExpertItem | null>(null);
-  const [loading,      setLoading]      = useState(true);
-  const [notFound,     setNotFound]     = useState(false);
-  const [bookingOpen,  setBookingOpen]  = useState(false);
+  const [expert, setExpert] = useState<HrExpertItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   useEffect(() => {
     if (!id) { setNotFound(true); setLoading(false); return; }

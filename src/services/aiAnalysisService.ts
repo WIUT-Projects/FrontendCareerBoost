@@ -28,9 +28,10 @@ export interface AiAnalysisHistoryItem {
 
 export async function analyzeResumeById(
   resumeId: number,
-  token: string
+  token: string,
+  lang = 'en'
 ): Promise<AiAnalysisResult> {
-  const response = await fetch(`${API_URL}/api/ai-analysis/resume/${resumeId}`, {
+  const response = await fetch(`${API_URL}/api/ai-analysis/resume/${resumeId}?lang=${lang}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -44,12 +45,13 @@ export async function analyzeResumeById(
 
 export async function analyzeResumePdf(
   file: File,
-  token: string
+  token: string,
+  lang = 'en'
 ): Promise<AiAnalysisResult> {
   const form = new FormData();
   form.append('file', file);
 
-  const response = await fetch(`${API_URL}/api/ai-analysis/pdf`, {
+  const response = await fetch(`${API_URL}/api/ai-analysis/pdf?lang=${lang}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
@@ -57,6 +59,22 @@ export async function analyzeResumePdf(
 
   if (!response.ok) {
     throw new Error(`Failed to analyze PDF: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getAiAnalysisById(
+  id: number,
+  token: string
+): Promise<AiAnalysisResult> {
+  const response = await fetch(`${API_URL}/api/ai-analysis/${id}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch analysis result: ${response.statusText}`);
   }
 
   return response.json();

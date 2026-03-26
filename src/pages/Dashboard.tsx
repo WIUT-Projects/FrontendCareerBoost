@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getMySubscriptionStatus, SubscriptionPlanType } from '@/services/subscriptionService';
+import { SubscriptionPlanType } from '@/services/subscriptionService';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useRecentResumes } from '@/hooks/useRecentResumes';
 
 // Helper to convert enum to readable string
 function getPlanTypeName(planType: SubscriptionPlanType): string {
@@ -22,12 +24,6 @@ function getPlanTypeName(planType: SubscriptionPlanType): string {
   return names[planType] || 'Free';
 }
 
-// ── mock recent resumes ──────────────────────────────────────────────────────
-const RECENT_RESUMES = [
-  { id: 1, title: 'Full Stack Developer Resume',   template: 'Classic',      score: 82, updated: '2d ago' },
-  { id: 2, title: 'Product Manager CV',            template: 'Atlantic Blue', score: 67, updated: '5d ago' },
-  { id: 3, title: 'UI/UX Designer Portfolio',      template: 'Mercury',      score: 91, updated: '1w ago' },
-];
 
 // ── score ring ───────────────────────────────────────────────────────────────
 function ScoreRing({ score }: { score: number }) {
@@ -56,15 +52,10 @@ const DashboardPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const firstName = profile?.fullName?.split(' ')[0] || 'Foydalanuvchi';
-  const [currentPlan, setCurrentPlan] = useState('Free');
-
-  useEffect(() => {
-    getMySubscriptionStatus()
-      .then((s) => setCurrentPlan(getPlanTypeName(s.planType)))
-      .catch(() => null);
-  }, []);
-
+  const { data: subStatus } = useSubscriptionStatus();
+  const currentPlan = getPlanTypeName(subStatus?.planType ?? SubscriptionPlanType.Free);
   const isPro = currentPlan !== 'Free';
+  const { data: recentResumes = [], isLoading: resumesLoading } = useRecentResumes();
 
   return (
     <div className="min-h-full bg-muted/30 py-6">
@@ -141,41 +132,69 @@ const DashboardPage = () => {
                 </button>
               </div>
               <div className="space-y-2">
-                {RECENT_RESUMES.map((r) => (
-                  <div
-                    key={r.id}
-                    onClick={() => navigate('/resumes')}
-                    className="group flex items-center gap-3 rounded-xl border bg-muted/30 hover:bg-accent/40 px-3.5 py-3 cursor-pointer transition-all"
-                  >
-                    <ScoreRing score={r.score} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{r.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 bg-background rounded-full px-2 py-0.5 border">
-                          <Palette className="h-2.5 w-2.5" /> {r.template}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5" /> {r.updated}
-                        </span>
-                      </p>
+                {resumesLoading ? (
+                  // Loading skeleton
+                  [1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-xl border bg-muted/30 px-3.5 py-3 animate-pulse">
+                      <div className="h-[60px] w-[60px] rounded-full bg-muted flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-muted rounded w-3/4" />
+                        <div className="h-2.5 bg-muted rounded w-1/2" />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigate('/resumes'); }}
-                        className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-[11px] bg-background border rounded-lg px-2.5 py-1 hover:border-primary/40 transition-all"
-                      >
-                        <PenLine className="h-3 w-3" /> Edit
-                      </button>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+                  ))
+                ) : recentResumes.length === 0 ? (
+                  // Empty state
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p>{t('resume.noResumes')}</p>
                   </div>
-                ))}
+                ) : (
+                  recentResumes.map((resume) => (
+                    <div
+                      key={resume.id}
+                      onClick={() => navigate(`/resumes/${resume.id}/edit`)}
+                      className="group flex items-center gap-3 rounded-xl border bg-muted/30 hover:bg-accent/40 px-3.5 py-3 cursor-pointer transition-all"
+                    >
+                      {resume.aiScore !== null ? (
+                        <ScoreRing score={resume.aiScore} />
+                      ) : (
+                        <div className="flex-shrink-0 h-[60px] w-[60px] rounded-full border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
+                          <span className="text-[11px] text-muted-foreground">—</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{resume.title}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                          {resume.templateName && (
+                            <span className="inline-flex items-center gap-1 bg-background rounded-full px-2 py-0.5 border">
+                              <Palette className="h-2.5 w-2.5" /> {resume.templateName}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {new Date(resume.updatedAt ?? resume.createdAt).toLocaleDateString()}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/resumes/${resume.id}/edit`); }}
+                          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-[11px] bg-background border rounded-lg px-2.5 py-1 hover:border-primary/40 transition-all"
+                        >
+                          <PenLine className="h-3 w-3" /> Edit
+                        </button>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
               <button
-                onClick={() => navigate('/resumes')}
+                onClick={() => navigate('/resumes/new')}
                 className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
               >
-                <PenLine className="h-3.5 w-3.5" /> Yangi resume yaratish
+                <PenLine className="h-3.5 w-3.5" /> {t('resume.newResume')}
               </button>
             </div>
 

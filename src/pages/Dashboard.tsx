@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -10,11 +9,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { SubscriptionPlanType } from '@/services/subscriptionService';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useRecentResumes } from '@/hooks/useRecentResumes';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 
-// Helper to convert enum to readable string
 function getPlanTypeName(planType: SubscriptionPlanType): string {
   const names: Record<SubscriptionPlanType, string> = {
     [SubscriptionPlanType.Free]: 'Free',
@@ -23,7 +23,6 @@ function getPlanTypeName(planType: SubscriptionPlanType): string {
   };
   return names[planType] || 'Free';
 }
-
 
 // ── score ring ───────────────────────────────────────────────────────────────
 function ScoreRing({ score }: { score: number }) {
@@ -46,16 +45,47 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+// ── stat pill ─────────────────────────────────────────────────────────────────
+function StatPill({
+  icon: Icon, label, count, bg, url, loading,
+}: {
+  icon: React.ElementType;
+  label: string;
+  count: number;
+  bg: string;
+  url: string;
+  loading?: boolean;
+}) {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => navigate(url)}
+      className="group inline-flex items-center gap-2 rounded-full border bg-background/80 backdrop-blur-sm pl-1 pr-3.5 py-1 text-xs hover:border-primary/30 hover:bg-accent/50 transition-all"
+    >
+      <span className={`h-6 w-6 rounded-full ${bg} flex items-center justify-center`}>
+        <Icon className="h-3 w-3 text-white" />
+      </span>
+      <span className="font-medium">{label}</span>
+      {loading ? (
+        <Skeleton className="h-3 w-5 rounded" />
+      ) : (
+        <span className="font-mono text-muted-foreground">{count}</span>
+      )}
+    </button>
+  );
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 const DashboardPage = () => {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const firstName = profile?.fullName?.split(' ')[0] || 'Foydalanuvchi';
+  const firstName = profile?.fullName?.split(' ')[0] || t('dashboard.user');
   const { data: subStatus } = useSubscriptionStatus();
   const currentPlan = getPlanTypeName(subStatus?.planType ?? SubscriptionPlanType.Free);
   const isPro = currentPlan !== 'Free';
   const { data: recentResumes = [], isLoading: resumesLoading } = useRecentResumes();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
 
   return (
     <div className="min-h-full bg-muted/30 py-6">
@@ -74,11 +104,10 @@ const DashboardPage = () => {
                 </h1>
                 <Badge
                   variant="outline"
-                  className={`cursor-pointer text-[10px] px-2 py-0 h-5 transition-colors ${
-                    isPro
+                  className={`cursor-pointer text-[10px] px-2 py-0 h-5 transition-colors ${isPro
                       ? 'border-amber-400/40 text-amber-500 hover:bg-amber-500 hover:text-white'
                       : 'border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground'
-                  }`}
+                    }`}
                   onClick={() => navigate('/settings/subscription')}
                 >
                   <Crown className="h-2.5 w-2.5 mr-0.5" />
@@ -89,24 +118,10 @@ const DashboardPage = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {[
-                { icon: FileText,      label: t('sidebar.myResumes'), url: '/resumes',    count: 3,   bg: 'bg-blue-500' },
-                { icon: Briefcase,     label: t('sidebar.jobs'),       url: '/jobs',       count: 128, bg: 'bg-violet-500' },
-                { icon: Calendar,      label: t('sidebar.interviews'), url: '/interviews', count: 2,   bg: 'bg-emerald-500' },
-                { icon: MessageSquare, label: t('sidebar.messages'),   url: '/messages',   count: 5,   bg: 'bg-amber-500' },
-              ].map((link) => (
-                <button
-                  key={link.url}
-                  onClick={() => navigate(link.url)}
-                  className="group inline-flex items-center gap-2 rounded-full border bg-background/80 backdrop-blur-sm pl-1 pr-3.5 py-1 text-xs hover:border-primary/30 hover:bg-accent/50 transition-all"
-                >
-                  <span className={`h-6 w-6 rounded-full ${link.bg} flex items-center justify-center`}>
-                    <link.icon className="h-3 w-3 text-white" />
-                  </span>
-                  <span className="font-medium">{link.label}</span>
-                  <span className="font-mono text-muted-foreground">{link.count}</span>
-                </button>
-              ))}
+              <StatPill icon={FileText} label={t('sidebar.myResumes')} count={stats?.resumesCount ?? 0} bg="bg-blue-500" url="/resumes" loading={statsLoading} />
+              <StatPill icon={Briefcase} label={t('sidebar.jobs')} count={stats?.activeJobsCount ?? 0} bg="bg-violet-500" url="/jobs" loading={statsLoading} />
+              <StatPill icon={Calendar} label={t('sidebar.interviews')} count={stats?.interviewsCount ?? 0} bg="bg-emerald-500" url="/interviews" loading={statsLoading} />
+              <StatPill icon={MessageSquare} label={t('dashboard.conversations')} count={stats?.conversationsCount ?? 0} bg="bg-amber-500" url="/messages" loading={statsLoading} />
             </div>
           </div>
         </div>
@@ -122,18 +137,17 @@ const DashboardPage = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
-                  <h2 className="font-display font-semibold text-sm">So'nggi resumelar</h2>
+                  <h2 className="font-display font-semibold text-sm">{t('dashboard.recentResumes')}</h2>
                 </div>
                 <button
                   onClick={() => navigate('/resumes')}
                   className="text-[11px] font-medium text-primary flex items-center gap-0.5 hover:underline"
                 >
-                  Barchasi <ChevronRight className="h-3 w-3" />
+                  {t('dashboard.viewAll')} <ChevronRight className="h-3 w-3" />
                 </button>
               </div>
               <div className="space-y-2">
                 {resumesLoading ? (
-                  // Loading skeleton
                   [1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-3 rounded-xl border bg-muted/30 px-3.5 py-3 animate-pulse">
                       <div className="h-[60px] w-[60px] rounded-full bg-muted flex-shrink-0" />
@@ -144,7 +158,6 @@ const DashboardPage = () => {
                     </div>
                   ))
                 ) : recentResumes.length === 0 ? (
-                  // Empty state
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
                     <p>{t('resume.noResumes')}</p>
@@ -182,7 +195,7 @@ const DashboardPage = () => {
                           onClick={(e) => { e.stopPropagation(); navigate(`/resumes/${resume.id}/edit`); }}
                           className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-[11px] bg-background border rounded-lg px-2.5 py-1 hover:border-primary/40 transition-all"
                         >
-                          <PenLine className="h-3 w-3" /> Edit
+                          <PenLine className="h-3 w-3" /> {t('dashboard.edit')}
                         </button>
                         <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
@@ -190,19 +203,13 @@ const DashboardPage = () => {
                   ))
                 )}
               </div>
-              <button
-                onClick={() => navigate('/resumes/new')}
-                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
-              >
-                <PenLine className="h-3.5 w-3.5" /> {t('resume.newResume')}
-              </button>
             </div>
 
             {/* AI Tools */}
             <div className="rounded-2xl border bg-card p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Zap className="h-4 w-4 text-primary" />
-                <h2 className="font-display font-semibold text-sm">AI Vositalar</h2>
+                <h2 className="font-display font-semibold text-sm">{t('dashboard.aiTools')}</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
@@ -215,7 +222,7 @@ const DashboardPage = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-sm">{t('sidebar.aiAnalysis')}</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">AI orqali ATS balli, kalit so'zlar va tavsiyalar</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{t('dashboard.aiAnalysisDesc')}</p>
                     </div>
                     <div className="flex gap-2">
                       {['ATS Score', 'Suggestions'].map((tag) => (
@@ -234,7 +241,7 @@ const DashboardPage = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-sm">AI Optimizer</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Matnni yaxshilash, grammatika va vakansiyaga moslashtirish</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{t('dashboard.aiOptimizerDesc')}</p>
                     </div>
                     <div className="flex gap-2">
                       {['Instant', 'Smart'].map((tag) => (
@@ -252,12 +259,20 @@ const DashboardPage = () => {
                       <UserCircle className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-sm">HR Ekspert</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Professional HR mutaxassislaridan shaxsiy maslahat</p>
+                      <h3 className="font-semibold text-sm">{t('dashboard.hrExpert')}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{t('dashboard.hrExpertDesc')}</p>
                     </div>
                     <div className="flex gap-2">
-                      <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">24 ta ekspert</span>
-                      <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">★ 4.8</span>
+                      {statsLoading ? (
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      ) : (
+                        <>
+                          <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">
+                            {t('dashboard.hrExpertsCount', { count: stats?.hrExpertsCount ?? 0 })}
+                          </span>
+                          <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">★ 4.8</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -270,11 +285,17 @@ const DashboardPage = () => {
                       <Briefcase className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-sm">Vakansiyalar</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Sizga mos ish o'rinlarini toping va ariza yuboring</p>
+                      <h3 className="font-semibold text-sm">{t('dashboard.vacancies')}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{t('dashboard.vacanciesDesc')}</p>
                     </div>
                     <div className="flex gap-2">
-                      <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">128 ochiq</span>
+                      {statsLoading ? (
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      ) : (
+                        <span className="text-[10px] bg-background/80 border rounded-full px-2 py-0.5">
+                          {t('dashboard.openJobs', { count: stats?.activeJobsCount ?? 0 })}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -290,13 +311,35 @@ const DashboardPage = () => {
             <div className="rounded-2xl border bg-card p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="h-4 w-4 text-muted-foreground" />
-                <h2 className="font-display font-semibold text-sm">Explore</h2>
+                <h2 className="font-display font-semibold text-sm">{t('dashboard.explore')}</h2>
               </div>
               <div className="space-y-2">
                 {[
-                  { icon: Palette,    label: t('sidebar.templates'),  desc: '50+ premium shablon', url: '/templates',   color: 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600' },
-                  { icon: Users,      label: t('sidebar.hrExperts'),  desc: '24 ta ekspert',       url: '/hr',          color: 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600' },
-                  { icon: TrendingUp, label: t('sidebar.aiAnalysis'), desc: 'AI tahlil',           url: '/ai-analysis', color: 'bg-amber-100 dark:bg-amber-950/50 text-amber-600' },
+                  {
+                    icon: Palette,
+                    label: t('sidebar.templates'),
+                    desc: statsLoading
+                      ? '...'
+                      : t('dashboard.exploreTemplates', { count: stats?.templatesCount ?? 0 }),
+                    url: '/templates',
+                    color: 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600',
+                  },
+                  {
+                    icon: Users,
+                    label: t('sidebar.hrExperts'),
+                    desc: statsLoading
+                      ? '...'
+                      : t('dashboard.hrExpertsCount', { count: stats?.hrExpertsCount ?? 0 }),
+                    url: '/hr',
+                    color: 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600',
+                  },
+                  {
+                    icon: TrendingUp,
+                    label: t('sidebar.aiAnalysis'),
+                    desc: t('dashboard.exploreAi'),
+                    url: '/ai-analysis',
+                    color: 'bg-amber-100 dark:bg-amber-950/50 text-amber-600',
+                  },
                 ].map((tool) => (
                   <button
                     key={tool.url}
@@ -327,12 +370,17 @@ const DashboardPage = () => {
                       <Crown className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div>
-                      <p className="font-bold text-sm">Go Pro</p>
-                      <p className="text-[11px] text-muted-foreground">$12/oy dan</p>
+                      <p className="font-bold text-sm">{t('dashboard.goPro')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('dashboard.goProPrice')}</p>
                     </div>
                   </div>
                   <ul className="space-y-1.5 mb-4">
-                    {['Cheksiz AI tahlil', 'Premium shablonlar', 'HR ekspert sessiyalari', 'Priority support'].map((f) => (
+                    {[
+                      t('dashboard.proFeature1'),
+                      t('dashboard.proFeature2'),
+                      t('dashboard.proFeature3'),
+                      t('dashboard.proFeature4'),
+                    ].map((f) => (
                       <li key={f} className="flex items-center gap-2 text-[11px] text-muted-foreground">
                         <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                         {f}
@@ -344,7 +392,7 @@ const DashboardPage = () => {
                     onClick={() => navigate('/settings/subscription')}
                     className="w-full rounded-xl h-8 text-xs"
                   >
-                    Rejalarni ko'rish <ArrowRight className="ml-1 h-3 w-3" />
+                    {t('dashboard.viewPlans')} <ArrowRight className="ml-1 h-3 w-3" />
                   </Button>
                 </div>
               </div>

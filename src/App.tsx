@@ -84,6 +84,9 @@ const App = () => (
                   <Route path="/blog/new" element={<AdminBlogNewPage />} />
                   <Route path="/messages" element={<InboxPage />} />
                   <Route path="/messages/:userId" element={<ChatPage />} />
+                  {/* Job management: any authenticated user can create & manage their own listings */}
+                  <Route path="/jobs/manage" element={<HrJobListingsPage />} />
+                  <Route path="/jobs/manage/applicants" element={<HrApplicantsPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/settings/profile" element={<ProfileSettingsPage />} />
                   <Route path="/settings/subscription" element={<SubscriptionPage />} />

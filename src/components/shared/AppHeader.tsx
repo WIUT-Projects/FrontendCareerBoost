@@ -315,9 +315,10 @@ export function AppHeader() {
   ];
 
   const jobSeekerProfileItems = [
-    { title: t('sidebar.myResumes'), url: '/resumes', icon: FileText },
-    { title: t('sidebar.messages'), url: '/messages', icon: MessageSquare },
-    { title: t('sidebar.interviews'), url: '/interviews', icon: Calendar },
+    { title: t('sidebar.myResumes'),    url: '/resumes',               icon: FileText      },
+    { title: t('sidebar.messages'),     url: '/messages',              icon: MessageSquare },
+    { title: t('sidebar.interviews'),   url: '/interviews',            icon: Calendar      },
+    { title: t('sidebar.myJobListings'), url: '/jobs/manage',          icon: ClipboardList },
   ];
 
   const hrExpertNav = [

@@ -23,6 +23,14 @@ export interface HrExpertsPage {
   totalPages: number;
 }
 
+export interface HrRatingItem {
+  id: number;
+  score: number;
+  comment: string | null;
+  reviewerName: string | null;
+  createdAt: string;
+}
+
 export interface BookHrExpertPayload {
   hrExpertId: number;
   scheduledAt: string;   // ISO string
@@ -84,6 +92,12 @@ export async function bookHrExpert(
     throw new Error((err as { detail?: string; title?: string }).detail ?? 'Booking failed');
   }
   return res.json() as Promise<BookingResult>;
+}
+
+export async function getHrRatings(id: number): Promise<HrRatingItem[]> {
+  const res = await fetch(`${API_URL}/api/hr-experts/${id}/ratings`);
+  if (!res.ok) throw new Error('Failed to load ratings');
+  return res.json() as Promise<HrRatingItem[]>;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

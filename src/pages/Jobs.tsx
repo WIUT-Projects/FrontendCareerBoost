@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { JobCard } from '@/components/jobs/JobCard';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,7 +14,7 @@ import {
   unsaveJob,
   type JobListingResponse,
 } from '@/services/jobService';
-import { Search } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'remote', 'contract'];
@@ -20,6 +22,8 @@ const PAGE_SIZE = 10;
 
 export default function Jobs() {
   const { session } = useAuth();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const token = session?.access_token ?? null;
 
   const [jobs, setJobs] = useState<JobListingResponse[]>([]);
@@ -110,21 +114,28 @@ export default function Jobs() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Job Listings</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">{t('jobs.pageTitle')}</h1>
+        {token && (
+          <Button onClick={() => navigate('/jobs/manage')}>
+            <Plus className="w-4 h-4 mr-2" /> {t('jobs.postJob')}
+          </Button>
+        )}
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by title or company..."
+            placeholder={t('jobs.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
         <Input
-          placeholder="Location..."
+          placeholder={t('jobs.locationPlaceholder')}
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           className="w-40"
@@ -134,17 +145,17 @@ export default function Jobs() {
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
-            {EMPLOYMENT_TYPES.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
+            {EMPLOYMENT_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={applyFilters}>Apply</Button>
+        <Button onClick={applyFilters}>{t('jobs.apply')}</Button>
         {(appliedFilters.location || appliedFilters.employmentType) && (
           <Button variant="ghost" onClick={resetFilters}>
-            Reset
+            {t('jobs.reset')}
           </Button>
         )}
       </div>
@@ -157,11 +168,11 @@ export default function Jobs() {
           ))}
         </div>
       ) : filteredJobs.length === 0 ? (
-        <p className="text-center text-muted-foreground py-16">No job listings found.</p>
+        <p className="text-center text-muted-foreground py-16">{t('jobs.noResults')}</p>
       ) : (
         <>
           <p className="text-sm text-muted-foreground mb-4">
-            {totalCount} job{totalCount !== 1 ? 's' : ''} found
+            {t('jobs.found', { count: totalCount })}
           </p>
           <div className="space-y-4">
             {filteredJobs.map((job) => (

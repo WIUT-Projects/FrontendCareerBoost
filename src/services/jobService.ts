@@ -17,7 +17,7 @@ export interface JobListingResponse {
   salaryMax: number | null;
   currency: string | null;
   experienceYears: number | null;
-  status: 'draft' | 'active' | 'closed' | null;
+  status: 'draft' | 'active' | 'closed' | number | null;
   viewsCount: number;
   applicationsCount: number;
   expiresAt: string | null;
@@ -50,8 +50,9 @@ export interface JobApplicationResponse {
   applicantId: number;
   applicantName: string | null;
   resumeId: number | null;
+  resumeFileUrl: string | null;
   coverLetter: string | null;
-  status: 'pending' | 'reviewed' | 'accepted' | 'rejected' | null;
+  status: 'pending' | 'reviewed' | 'accepted' | 'rejected' | number | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -59,6 +60,7 @@ export interface JobApplicationResponse {
 export interface CreateJobApplicationRequest {
   jobId: number;
   resumeId?: number;
+  resumeFileUrl?: string;
   coverLetter?: string;
 }
 
@@ -79,6 +81,23 @@ export interface PagedResult<T> {
   pageIndex: number;
   pageSize: number;
   totalPages: number;
+}
+
+// ─── File Upload ───────────────────────────────────────────────────────────────
+
+// POST /api/files/upload?folder=resumes
+// Used in: JobDetail.tsx (upload PDF/Word resume before submitting application)
+export async function uploadJobResume(token: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_URL}/api/files/upload?folder=resumes`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Failed to upload resume file');
+  const data: { url: string } = await res.json();
+  return data.url;
 }
 
 // ─── Job Listings ──────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,11 +13,12 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   ShieldCheck, Star, Briefcase, Clock,
   MessageSquare, CalendarPlus, Loader2, CheckCircle2,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
-  getHrExpertById,
+  getHrExpertById, getHrRatings,
   getSpecializationChips, formatPrice,
-  type HrExpertItem,
+  type HrExpertItem, type HrRatingItem,
 } from '@/services/hrExpertService';
 import { createBookingCheckout } from '@/services/bookingService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -219,6 +221,128 @@ function BookingModal({ open, expert, onClose, onSuccess }: BookingModalProps) {
 
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Reviews carousel ─────────────────────────────────────────────────────────
+
+function ReviewCard({ review }: { review: HrRatingItem }) {
+  return (
+    <div className="flex-shrink-0 w-72 snap-center rounded-xl border bg-muted/20 p-4 space-y-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map(i => (
+            <svg
+              key={i}
+              className={cn(
+                'h-4 w-4',
+                i <= review.score ? 'fill-amber-400 text-amber-400' : 'fill-muted text-muted',
+              )}
+              viewBox="0 0 20 20"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.375 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.375-2.452a1 1 0 00-1.175 0l-3.375 2.452c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69L9.05 2.927z" />
+            </svg>
+          ))}
+        </div>
+        <span className="text-[10px] text-muted-foreground flex-shrink-0">
+          {new Date(review.createdAt).toLocaleDateString()}
+        </span>
+      </div>
+      {review.comment && (
+        <p className="text-xs text-foreground/80 leading-relaxed line-clamp-4">
+          "{review.comment}"
+        </p>
+      )}
+      <p className="text-[11px] font-semibold text-muted-foreground">
+        — {review.reviewerName ?? 'Anonymous'}
+      </p>
+    </div>
+  );
+}
+
+function ReviewsCarousel({ expertId }: { expertId: number }) {
+  const { t } = useTranslation();
+  const [index, setIndex] = useState(0);
+
+  const { data: reviews = [], isLoading } = useQuery<HrRatingItem[]>({
+    queryKey: ['hr-ratings', expertId],
+    queryFn: () => getHrRatings(expertId),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="bg-card border rounded-2xl p-5 space-y-3">
+        <Skeleton className="h-4 w-32" />
+        <div className="flex gap-3">
+          <Skeleton className="h-28 w-72 rounded-xl flex-shrink-0" />
+          <Skeleton className="h-28 w-72 rounded-xl flex-shrink-0" />
+        </div>
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) return null;
+
+  const visible = 2;
+  const maxIndex = Math.max(0, reviews.length - visible);
+  const canPrev = index > 0;
+  const canNext = index < maxIndex;
+
+  return (
+    <div className="bg-card border rounded-2xl p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+          <h2 className="font-semibold text-sm">{t('booking.reviews')}</h2>
+          <span className="text-xs text-muted-foreground">({reviews.length})</span>
+        </div>
+        {reviews.length > visible && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIndex(i => Math.max(0, i - 1))}
+              disabled={!canPrev}
+              className="h-7 w-7 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-30 hover:bg-accent"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setIndex(i => Math.min(maxIndex, i + 1))}
+              disabled={!canNext}
+              className="h-7 w-7 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-30 hover:bg-accent"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-3 overflow-hidden">
+        {reviews.slice(index, index + visible).map(r => (
+          <ReviewCard key={r.id} review={r} />
+        ))}
+        {/* Filler when odd count */}
+        {reviews.slice(index, index + visible).length < visible && reviews.length > 0 && (
+          <div className="flex-shrink-0 w-72" />
+        )}
+      </div>
+
+      {/* Dot indicators */}
+      {reviews.length > visible && (
+        <div className="flex items-center justify-center gap-1 pt-1">
+          {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              className={cn(
+                'h-1.5 rounded-full transition-all',
+                i === index ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30',
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -426,6 +550,9 @@ export default function HrProfilePage() {
             </li>
           </ul>
         </div>
+
+        {/* Reviews carousel */}
+        <ReviewsCarousel expertId={Number(id)} />
 
         {/* CTA strip */}
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center justify-between gap-4">

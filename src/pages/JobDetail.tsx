@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -19,11 +19,20 @@ import {
   unsaveJob,
   getApplicationsByApplicant,
   createApplication,
+  uploadJobResume,
   type JobListingResponse,
 } from '@/services/jobService';
-import { MapPin, Briefcase, Clock, Users, Eye, Bookmark, BookmarkCheck, Calendar } from 'lucide-react';
+import { sendMessage } from '@/services/messageService';
+import { MapPin, Briefcase, Clock, Users, Eye, Bookmark, BookmarkCheck, Calendar, FileText, X, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+const ALLOWED_EXT = ['.pdf', '.doc', '.docx'];
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,8 +48,11 @@ export default function JobDetail() {
 
   const [applyOpen, setApplyOpen] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState('');
   const [applying, setApplying] = useState(false);
   const [savingJob, setSavingJob] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -85,19 +97,68 @@ export default function JobDetail() {
     }
   }
 
+  function handleFileSelect(file: File) {
+    setFileError('');
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_TYPES.includes(file.type) && !ALLOWED_EXT.includes(ext)) {
+      setFileError('Only PDF, DOC, or DOCX files are allowed');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setFileError('File size must be under 10 MB');
+      return;
+    }
+    setResumeFile(file);
+  }
+
   async function handleApply() {
     if (!token) { navigate('/login'); return; }
     setApplying(true);
     try {
-      await createApplication(token, { jobId: Number(id), coverLetter: coverLetter || undefined });
+      // 1. Upload resume file if provided
+      let resumeFileUrl: string | undefined;
+      if (resumeFile) {
+        resumeFileUrl = await uploadJobResume(token, resumeFile);
+      }
+
+      // 2. Submit application
+      await createApplication(token, {
+        jobId: Number(id),
+        resumeFileUrl,
+        coverLetter: coverLetter || undefined,
+      });
+
       setHasApplied(true);
-      setApplyOpen(false);
-      setCoverLetter('');
-      toast.success('Application submitted!');
+
+      // 3. Auto-message job poster with cover letter
+      if (job?.postedBy) {
+        const msgBody = coverLetter.trim()
+          ? coverLetter.trim()
+          : `Hi! I've applied to your job posting "${job.title}".`;
+        try {
+          await sendMessage(token, job.postedBy, msgBody);
+        } catch {
+          // messaging failure shouldn't block apply success
+        }
+        // 4. Navigate to conversation
+        setApplyOpen(false);
+        setCoverLetter('');
+        setResumeFile(null);
+        toast.success('Application submitted! Opening conversation...');
+        navigate(`/messages/${job.postedBy}`, {
+          state: { partnerName: job.postedByName, partnerAvatar: null },
+        });
+      } else {
+        setApplyOpen(false);
+        setCoverLetter('');
+        setResumeFile(null);
+        toast.success('Application submitted!');
+      }
     } catch (err: unknown) {
       if (err instanceof Error && err.message === 'already_applied') {
         toast.error('You have already applied to this job');
         setHasApplied(true);
+        setApplyOpen(false);
       } else {
         toast.error('Failed to submit application');
       }
@@ -241,18 +302,59 @@ export default function JobDetail() {
       </p>
 
       {/* Apply Dialog */}
-      <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
-        <DialogContent>
+      <Dialog open={applyOpen} onOpenChange={(open) => { setApplyOpen(open); if (!open) { setResumeFile(null); setFileError(''); setCoverLetter(''); } }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Apply for {job.title}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 py-2">
+            {/* Resume Upload */}
             <div>
-              <label className="text-sm font-medium">Cover Letter (optional)</label>
+              <label className="text-sm font-medium">Resume (PDF or Word)</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
+              />
+              {resumeFile ? (
+                <div className="mt-1.5 flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2.5">
+                  <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <span className="text-sm flex-1 truncate">{resumeFile.name}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {(resumeFile.size / 1024).toFixed(0)} KB
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setResumeFile(null); setFileError(''); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-1.5 w-full flex items-center gap-2 justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-4 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Click to upload resume (PDF, DOC, DOCX · max 10 MB)
+                </button>
+              )}
+              {fileError && <p className="text-xs text-destructive mt-1">{fileError}</p>}
+            </div>
+
+            {/* Cover Letter */}
+            <div>
+              <label className="text-sm font-medium">
+                Cover Letter <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
               <Textarea
                 className="mt-1.5"
-                rows={6}
-                placeholder="Write a short cover letter..."
+                rows={5}
+                placeholder="Write a short cover letter... It will be sent as your first message to the employer."
                 value={coverLetter}
                 onChange={(e) => setCoverLetter(e.target.value)}
                 maxLength={5000}
@@ -262,7 +364,7 @@ export default function JobDetail() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setApplyOpen(false)}>Cancel</Button>
-            <Button onClick={handleApply} disabled={applying}>
+            <Button onClick={handleApply} disabled={applying || !!fileError}>
               {applying ? 'Submitting...' : 'Submit Application'}
             </Button>
           </DialogFooter>

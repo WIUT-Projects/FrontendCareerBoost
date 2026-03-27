@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -16,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ApplicationStatusBadge } from '@/components/jobs/ApplicationStatusBadge';
+import { ApplicationStatusBadge, normalizeStatus } from '@/components/jobs/ApplicationStatusBadge';
 import {
   getJobListings,
   getApplicationsByJob,
@@ -24,20 +26,25 @@ import {
   type JobListingResponse,
   type JobApplicationResponse,
 } from '@/services/jobService';
-import { Users } from 'lucide-react';
+import { Users, FileText, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { resolveMediaUrl } from '@/lib/utils';
 
 type AppStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected';
 const STATUSES: AppStatus[] = ['pending', 'reviewed', 'accepted', 'rejected'];
 
+
 export default function HrApplicants() {
   const { session, profile } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const preselectedJobId = (location.state as { jobId?: number } | null)?.jobId ?? null;
   const token = session?.access_token ?? '';
   const userId = profile?.id ? Number(profile.id) : null;
 
   const [myJobs, setMyJobs] = useState<JobListingResponse[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<number | null>(preselectedJobId);
   const [applications, setApplications] = useState<JobApplicationResponse[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingApps, setLoadingApps] = useState(false);
@@ -49,9 +56,11 @@ export default function HrApplicants() {
     setLoadingJobs(true);
     getJobListings({ pageIndex: 1, pageSize: 100 })
       .then((res) => {
-        const mine = res.items.filter((j) => j.postedBy === userId);
+        const isAdmin = profile?.role === 'admin';
+        const mine = isAdmin ? res.items : res.items.filter((j) => j.postedBy === userId);
         setMyJobs(mine);
-        if (mine.length > 0) setSelectedJobId(mine[0].id);
+        // Use preselected job if valid, otherwise fall back to first job
+        if (!preselectedJobId && mine.length > 0) setSelectedJobId(mine[0].id);
       })
       .catch(() => toast.error('Failed to load job listings'))
       .finally(() => setLoadingJobs(false));
@@ -129,16 +138,34 @@ export default function HrApplicants() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
+                    <TableHead>Resume</TableHead>
                     <TableHead>Cover Letter</TableHead>
                     <TableHead>Applied</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {applications.map((app) => (
                     <TableRow key={app.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-nowrap">
                         {app.applicantName ?? `User #${app.applicantId}`}
+                      </TableCell>
+                      <TableCell>
+                        {app.resumeFileUrl ? (
+                          <a
+                            href={resolveMediaUrl(app.resumeFileUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+                              <FileText className="h-3.5 w-3.5" />
+                              View
+                            </Button>
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">No resume</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground max-w-xs">
                         {app.coverLetter ? (
@@ -154,7 +181,7 @@ export default function HrApplicants() {
                         <div className="flex items-center gap-2">
                           <ApplicationStatusBadge status={app.status} />
                           <Select
-                            value={app.status ?? 'pending'}
+                            value={normalizeStatus(app.status)}
                             onValueChange={(v) => handleStatusChange(app.id, v as AppStatus)}
                             disabled={updatingId === app.id}
                           >
@@ -168,6 +195,19 @@ export default function HrApplicants() {
                             </SelectContent>
                           </Select>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title={`Message ${app.applicantName ?? 'applicant'}`}
+                          onClick={() => navigate(`/messages/${app.applicantId}`, {
+                            state: { partnerName: app.applicantName },
+                          })}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

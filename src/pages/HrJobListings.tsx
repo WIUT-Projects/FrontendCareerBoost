@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -46,7 +48,7 @@ import {
   type JobListingResponse,
   type CreateJobListingRequest,
 } from '@/services/jobService';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -55,6 +57,13 @@ const STATUS_BADGE: Record<string, string> = {
   draft: 'bg-yellow-100 text-yellow-700',
   closed: 'bg-gray-100 text-gray-500',
 };
+
+const JOB_STATUS_BY_INDEX = ['draft', 'active', 'closed'];
+function normalizeJobStatus(s: string | number | null | undefined): string {
+  if (s == null) return 'draft';
+  if (typeof s === 'number') return JOB_STATUS_BY_INDEX[s] ?? 'draft';
+  return String(s).toLowerCase();
+}
 
 const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'remote', 'contract'];
 const JOB_STATUSES = ['draft', 'active', 'closed'];
@@ -77,6 +86,8 @@ const EMPTY_FORM: CreateJobListingRequest = {
 
 export default function HrJobListings() {
   const { session, profile } = useAuth();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const token = session?.access_token ?? '';
   const userId = profile?.id ? Number(profile.id) : null;
 
@@ -99,7 +110,7 @@ export default function HrJobListings() {
       .then((res) => {
         setJobs(isAdmin ? res.items : res.items.filter((j) => j.postedBy === userId));
       })
-      .catch(() => toast.error('Failed to load job listings'))
+      .catch(() => toast.error(t('myJobListings.errorLoad')))
       .finally(() => setLoading(false));
   }, [userId, profile?.role]);
 
@@ -123,14 +134,14 @@ export default function HrJobListings() {
       salaryMax: job.salaryMax ?? undefined,
       currency: job.currency ?? 'USD',
       experienceYears: job.experienceYears ?? undefined,
-      status: job.status ?? 'draft',
+      status: normalizeJobStatus(job.status),
       expiresAt: job.expiresAt ? job.expiresAt.slice(0, 10) : '',
     });
     setFormOpen(true);
   }
 
   async function handleSave() {
-    if (!form.title.trim()) { toast.error('Title is required'); return; }
+    if (!form.title.trim()) { toast.error(t('myJobListings.titleRequired')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -147,15 +158,15 @@ export default function HrJobListings() {
       if (editingJob) {
         const updated = await updateJobListing(token, editingJob.id, payload);
         setJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
-        toast.success('Job listing updated');
+        toast.success(t('myJobListings.successUpdated'));
       } else {
         const created = await createJobListing(token, payload);
         setJobs((prev) => [created, ...prev]);
-        toast.success('Job listing created');
+        toast.success(t('myJobListings.successCreated'));
       }
       setFormOpen(false);
     } catch {
-      toast.error('Failed to save job listing');
+      toast.error(t('myJobListings.errorSave'));
     } finally {
       setSaving(false);
     }
@@ -167,10 +178,10 @@ export default function HrJobListings() {
     try {
       await deleteJobListing(token, deleteId);
       setJobs((prev) => prev.filter((j) => j.id !== deleteId));
-      toast.success('Job listing deleted');
+      toast.success(t('myJobListings.successDeleted'));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete';
-      toast.error(msg.includes('HasApplications') ? 'Cannot delete: job has active applications' : msg);
+      const msg = err instanceof Error ? err.message : t('myJobListings.errorHasApps');
+      toast.error(msg.includes('HasApplications') ? t('myJobListings.errorHasApps') : msg);
     } finally {
       setDeleting(false);
       setDeleteId(null);
@@ -184,9 +195,9 @@ export default function HrJobListings() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">My Job Listings</h1>
+        <h1 className="text-2xl font-bold">{t('myJobListings.pageTitle')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-2" /> New Listing
+          <Plus className="w-4 h-4 mr-2" /> {t('myJobListings.newListing')}
         </Button>
       </div>
 
@@ -198,19 +209,19 @@ export default function HrJobListings() {
         </div>
       ) : jobs.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
-          <p>No job listings yet.</p>
-          <Button variant="link" onClick={openCreate}>Create your first listing</Button>
+          <p>{t('myJobListings.noListings')}</p>
+          <Button variant="link" onClick={openCreate}>{t('myJobListings.createFirst')}</Button>
         </div>
       ) : (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Applications</TableHead>
-                <TableHead>Posted</TableHead>
-                <TableHead className="w-24" />
+                <TableHead>{t('myJobListings.colTitle')}</TableHead>
+                <TableHead>{t('myJobListings.colStatus')}</TableHead>
+                <TableHead>{t('myJobListings.colApplications')}</TableHead>
+                <TableHead>{t('myJobListings.colPosted')}</TableHead>
+                <TableHead className="w-36" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -223,8 +234,8 @@ export default function HrJobListings() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge className={STATUS_BADGE[job.status ?? ''] ?? 'bg-gray-100'}>
-                      {job.status ?? 'draft'}
+                    <Badge className={STATUS_BADGE[normalizeJobStatus(job.status)] ?? 'bg-gray-100'}>
+                      {normalizeJobStatus(job.status)}
                     </Badge>
                   </TableCell>
                   <TableCell>{job.applicationsCount}</TableCell>
@@ -232,7 +243,21 @@ export default function HrJobListings() {
                     {format(new Date(job.createdAt), 'MMM d, yyyy')}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 items-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={() => navigate('/jobs/manage/applicants', { state: { jobId: job.id } })}
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        {t('myJobListings.applicants')}
+                        {job.applicationsCount > 0 && (
+                          <span className="ml-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold px-1.5">
+                            {job.applicationsCount}
+                          </span>
+                        )}
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(job)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -257,32 +282,32 @@ export default function HrJobListings() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingJob ? 'Edit Job Listing' : 'New Job Listing'}</DialogTitle>
+            <DialogTitle>{editingJob ? t('myJobListings.editTitle') : t('myJobListings.newTitle')}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
             <div className="col-span-2">
-              <Label>Title *</Label>
+              <Label>{t('myJobListings.fieldTitle')}</Label>
               <Input className="mt-1" value={form.title} onChange={(e) => setField('title', e.target.value)} maxLength={300} />
             </div>
             <div>
-              <Label>Company Name</Label>
+              <Label>{t('myJobListings.fieldCompany')}</Label>
               <Input className="mt-1" value={form.companyName ?? ''} onChange={(e) => setField('companyName', e.target.value)} />
             </div>
             <div>
-              <Label>Location</Label>
+              <Label>{t('myJobListings.fieldLocation')}</Label>
               <Input className="mt-1" value={form.location ?? ''} onChange={(e) => setField('location', e.target.value)} />
             </div>
             <div>
-              <Label>Employment Type</Label>
+              <Label>{t('myJobListings.fieldEmploymentType')}</Label>
               <Select value={form.employmentType ?? ''} onValueChange={(v) => setField('employmentType', v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectTrigger className="mt-1"><SelectValue placeholder={t('myJobListings.selectType')} /></SelectTrigger>
                 <SelectContent>
                   {EMPLOYMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Status</Label>
+              <Label>{t('myJobListings.fieldStatus')}</Label>
               <Select value={form.status ?? 'draft'} onValueChange={(v) => setField('status', v)}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -291,38 +316,38 @@ export default function HrJobListings() {
               </Select>
             </div>
             <div>
-              <Label>Salary Min</Label>
+              <Label>{t('myJobListings.fieldSalaryMin')}</Label>
               <Input className="mt-1" type="number" min={0} value={form.salaryMin ?? ''} onChange={(e) => setField('salaryMin', e.target.value ? Number(e.target.value) : undefined)} />
             </div>
             <div>
-              <Label>Salary Max</Label>
+              <Label>{t('myJobListings.fieldSalaryMax')}</Label>
               <Input className="mt-1" type="number" min={0} value={form.salaryMax ?? ''} onChange={(e) => setField('salaryMax', e.target.value ? Number(e.target.value) : undefined)} />
             </div>
             <div>
-              <Label>Currency</Label>
+              <Label>{t('myJobListings.fieldCurrency')}</Label>
               <Input className="mt-1" value={form.currency ?? ''} onChange={(e) => setField('currency', e.target.value)} placeholder="USD" />
             </div>
             <div>
-              <Label>Experience (years)</Label>
+              <Label>{t('myJobListings.fieldExperience')}</Label>
               <Input className="mt-1" type="number" min={0} value={form.experienceYears ?? ''} onChange={(e) => setField('experienceYears', e.target.value ? Number(e.target.value) : undefined)} />
             </div>
             <div>
-              <Label>Expires At</Label>
+              <Label>{t('myJobListings.fieldExpiresAt')}</Label>
               <Input className="mt-1" type="date" value={form.expiresAt ?? ''} onChange={(e) => setField('expiresAt', e.target.value)} />
             </div>
             <div className="col-span-2">
-              <Label>Required Skills (comma-separated)</Label>
+              <Label>{t('myJobListings.fieldSkills')}</Label>
               <Input className="mt-1" value={form.requiredSkills ?? ''} onChange={(e) => setField('requiredSkills', e.target.value)} placeholder="React, TypeScript, Node.js" />
             </div>
             <div className="col-span-2">
-              <Label>Description</Label>
+              <Label>{t('myJobListings.fieldDescription')}</Label>
               <Textarea className="mt-1" rows={5} value={form.description ?? ''} onChange={(e) => setField('description', e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setFormOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setFormOpen(false)}>{t('myJobListings.cancel')}</Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : editingJob ? 'Update' : 'Create'}
+              {saving ? t('myJobListings.saving') : editingJob ? t('myJobListings.update') : t('myJobListings.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -332,15 +357,15 @@ export default function HrJobListings() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Job Listing</AlertDialogTitle>
+            <AlertDialogTitle>{t('myJobListings.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure? This action cannot be undone. Listings with active applications cannot be deleted.
+              {t('myJobListings.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t('myJobListings.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} disabled={deleting}>
-              {deleting ? 'Deleting...' : 'Delete'}
+              {deleting ? t('myJobListings.deleting') : t('myJobListings.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

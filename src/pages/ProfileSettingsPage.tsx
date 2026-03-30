@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   User, Lock, Briefcase, Eye, EyeOff,
   Save, Loader2, Upload, X, Camera,
-  CheckCircle2, Circle, ShieldCheck, Sparkles,
+  CheckCircle2, Circle, ShieldCheck, Sparkles, AlertCircle,
 } from 'lucide-react';
 import * as authService from '@/services/authService';
 import { cn, resolveMediaUrl } from '@/lib/utils';
@@ -467,6 +467,7 @@ function HrProfileContent() {
   const [reviewPrice,     setReviewPrice]     = useState('');
   const [saving,          setSaving]          = useState(false);
   const [loadingProfile,  setLoadingProfile]  = useState(true);
+  const [isVerified,      setIsVerified]      = useState(false);
 
   // Load existing HR profile on mount
   useEffect(() => {
@@ -478,6 +479,7 @@ function HrProfileContent() {
           setSpecializations(data.specializations ?? '');
           setYearsExp(data.yearsExp != null ? String(data.yearsExp) : '');
           setReviewPrice(data.reviewPriceUzs != null ? String(data.reviewPriceUzs) : '');
+          setIsVerified(data.isVerified ?? false);
         }
       })
       .catch(() => {/* silently ignore — no profile yet */})
@@ -517,6 +519,27 @@ function HrProfileContent() {
 
   return (
     <Section icon={Briefcase} title={t('settings.hrProfile')} desc={t('settings.hrProfileDesc')}>
+      {/* Verification Status Banner */}
+      {loadingProfile === false && (
+        <div className={`rounded-lg border px-4 py-3 flex items-center gap-3 ${
+          isVerified
+            ? 'bg-green-50 text-green-700 border-green-200'
+            : 'bg-amber-50 text-amber-700 border-amber-200'
+        }`}>
+          {isVerified ? (
+            <>
+              <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+              <div className="text-sm font-medium">{t('settings.verificationStatus.verified')}</div>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <div className="text-sm font-medium">{t('settings.verificationStatus.pending')}</div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Headline */}
       <div className="space-y-1.5">
         <Label htmlFor="headline">{t('settings.headline')}</Label>

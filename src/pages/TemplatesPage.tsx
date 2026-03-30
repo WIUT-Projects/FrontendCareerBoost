@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Download, Loader2, Lock, Palette, Sparkles } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Download, Loader2, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getTemplates } from '@/services/resumeService';
 import { loadSession } from '@/services/authService';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import type { ResumeTemplateDto, ResumeSectionDto } from '@/types/resume';
 import ResumeRenderer from '@/components/resume/ResumeRenderer';
 
@@ -77,7 +75,7 @@ export const DEMO_SECTIONS: ResumeSectionDto[] = [
 ];
 
 // ── Zoomed card preview — renders actual ResumeRenderer at A4 scale ─────────
-function TemplatePreview({ templateId }: { templateId: number }) {
+function TemplatePreview({ templateName }: { templateName: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.35);
 
@@ -98,12 +96,11 @@ function TemplatePreview({ templateId }: { templateId: number }) {
           width: '794px',
           transformOrigin: 'top left',
           transform: `scale(${zoom})`,
-          // Keep the height from overflowing the card
           height: `${100 / zoom}%`,
           pointerEvents: 'none',
         }}
       >
-        <ResumeRenderer sections={DEMO_SECTIONS} templateId={templateId} />
+        <ResumeRenderer sections={DEMO_SECTIONS} templateName={templateName} />
       </div>
     </div>
   );
@@ -112,29 +109,15 @@ function TemplatePreview({ templateId }: { templateId: number }) {
 // ── Template card ────────────────────────────────────────────────────────────
 function TemplateCard({
   template,
-  subStatus,
   onClick,
 }: {
   template: ResumeTemplateDto;
-  subStatus: SubscriptionStatus | null;
   onClick: () => void;
 }) {
   const { t } = useTranslation();
-  const isPremium = template.tier === 'premium';
-
-  // Determine if this template is locked for the current user
-  const isLocked = (() => {
-    if (!subStatus) return false;
-    if (isPremium) return !subStatus.hasActivePlan;
-    // Free tier: locked if quota exhausted
-    return subStatus.freeTemplatesLimit > 0 && subStatus.freeTemplatesUsed >= subStatus.freeTemplatesLimit;
-  })();
 
   return (
-    <div
-      onClick={onClick}
-      className="group cursor-pointer flex flex-col"
-    >
+    <div onClick={onClick} className="group cursor-pointer flex flex-col">
       {/* Preview — A4 aspect ratio (210/297) */}
       <div
         className="relative w-full overflow-hidden rounded-xl shadow-md ring-1 ring-border
@@ -148,46 +131,23 @@ function TemplateCard({
             className="w-full h-full object-cover object-top"
           />
         ) : (
-          <TemplatePreview templateId={template.id} />
+          <TemplatePreview templateName={template.name} />
         )}
 
-        {/* Premium badge — top-left */}
-        {isPremium && (
-          <div className="absolute top-2.5 left-2.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold
-                             bg-amber-400/90 text-amber-900 backdrop-blur-sm shadow">
-              <Sparkles className="h-2.5 w-2.5" />
-              {t('resume.premium')}
-            </span>
-          </div>
-        )}
-
-        {/* Lock overlay for restricted templates */}
-        {isLocked && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
-            <Lock className="h-7 w-7 text-white/90" />
-            <span className="text-white/90 text-xs font-semibold px-3 text-center">
-              {isPremium ? t('resume.upgradeForPremium') : t('resume.freeTemplateLimitReached')}
-            </span>
-          </div>
-        )}
-
-        {/* Hover overlay (only when not locked) */}
-        {!isLocked && (
-          <div
-            className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300
-                       flex items-center justify-center"
+        {/* Hover overlay */}
+        <div
+          className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300
+                     flex items-center justify-center"
+        >
+          <Button
+            size="sm"
+            onClick={onClick}
+            className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
+                       transition-all duration-300 shadow-lg"
           >
-            <Button
-              size="sm"
-              onClick={onClick}
-              className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
-                         transition-all duration-300 shadow-lg"
-            >
-              {t('resume.useTemplate')}
-            </Button>
-          </div>
-        )}
+            {t('resume.useTemplate')}
+          </Button>
+        </div>
       </div>
 
       {/* Footer */}
@@ -201,11 +161,6 @@ function TemplateCard({
             </p>
           )}
         </div>
-        {!isPremium && (
-          <Badge variant="secondary" className="text-xs font-medium">
-            {t('resume.free')}
-          </Badge>
-        )}
       </div>
     </div>
   );
@@ -219,8 +174,6 @@ export default function TemplatesPage() {
 
   const [templates, setTemplates] = useState<ResumeTemplateDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'free' | 'premium'>('all');
-  const { data: subStatus } = useSubscriptionStatus();
 
   useEffect(() => {
     getTemplates({ pageSize: 50, isActive: true })
@@ -228,11 +181,6 @@ export default function TemplatesPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
-
-  const filtered =
-    activeFilter === 'all'
-      ? templates
-      : templates.filter((t) => t.tier === activeFilter);
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -254,47 +202,6 @@ export default function TemplatesPage() {
               </Button>
             )}
           </div>
-
-          {/* Free template usage banner */}
-          {subStatus && !subStatus.hasActivePlan && subStatus.freeTemplatesLimit > 0 && (
-            <div className={`mt-4 px-3 py-2 rounded-lg text-xs flex items-center gap-2 ${
-              subStatus.freeTemplatesUsed >= subStatus.freeTemplatesLimit
-                ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                : 'bg-muted text-muted-foreground border border-border'
-            }`}>
-              <Lock className="h-3 w-3 flex-shrink-0" />
-              {subStatus.freeTemplatesUsed >= subStatus.freeTemplatesLimit
-                ? t('resume.freeTemplateLimitReached')
-                : `${subStatus.freeTemplatesUsed}/${subStatus.freeTemplatesLimit} ${t('resume.freeTemplatesUsed')}`}
-              <button
-                onClick={() => navigate('/settings/subscription')}
-                className="ml-auto underline underline-offset-2 hover:text-foreground"
-              >
-                {t('resume.upgrade')}
-              </button>
-            </div>
-          )}
-
-          {/* Filter tabs */}
-          <div className="flex items-center gap-2 mt-5">
-            {(['all', 'free', 'premium'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 ${
-                  activeFilter === f
-                    ? 'bg-foreground text-background shadow'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                {f === 'all'
-                  ? t('resume.allTemplates')
-                  : f === 'free'
-                    ? t('resume.free')
-                    : t('resume.premium')}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -305,18 +212,17 @@ export default function TemplatesPage() {
             <div className="flex items-center justify-center py-32">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : templates.length === 0 ? (
             <div className="text-center py-32 text-muted-foreground">
               <Palette className="h-12 w-12 mx-auto mb-4 opacity-25" />
               <p className="text-sm">{t('resume.noResumes')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
-              {filtered.map((tmpl) => (
+              {templates.map((tmpl) => (
                 <TemplateCard
                   key={tmpl.id}
                   template={tmpl}
-                  subStatus={subStatus}
                   onClick={() => navigate(`/templates/${tmpl.id}`)}
                 />
               ))}

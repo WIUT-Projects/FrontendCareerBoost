@@ -3,10 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -33,14 +31,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   getJobListings,
   createJobListing,
   updateJobListing,
@@ -48,14 +38,14 @@ import {
   type JobListingResponse,
   type CreateJobListingRequest,
 } from '@/services/jobService';
-import { Plus, Pencil, Trash2, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Briefcase, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 const STATUS_BADGE: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  draft: 'bg-yellow-100 text-yellow-700',
-  closed: 'bg-gray-100 text-gray-500',
+  active: 'bg-green-50 text-green-700 border-green-200',
+  draft: 'bg-amber-50 text-amber-700 border-amber-200',
+  closed: 'bg-slate-50 text-slate-700 border-slate-200',
 };
 
 const JOB_STATUS_BY_INDEX = ['draft', 'active', 'closed'];
@@ -193,57 +183,63 @@ export default function HrJobListings() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('myJobListings.pageTitle')}</h1>
-        <Button onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-2" /> {t('myJobListings.newListing')}
+    <div className="h-full flex flex-col bg-background">
+      {/* Header */}
+      <div className="flex-shrink-0 border-b bg-background px-6 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-5 w-5 text-primary" />
+          <h1 className="text-xl font-bold">{t('myJobListings.pageTitle')}</h1>
+          <span className="ml-1 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{jobs.length}</span>
+        </div>
+        <Button onClick={openCreate} size="sm">
+          <Plus className="w-4 h-4 mr-1.5" /> {t('myJobListings.newListing')}
         </Button>
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : jobs.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p>{t('myJobListings.noListings')}</p>
-          <Button variant="link" onClick={openCreate}>{t('myJobListings.createFirst')}</Button>
-        </div>
-      ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('myJobListings.colTitle')}</TableHead>
-                <TableHead>{t('myJobListings.colStatus')}</TableHead>
-                <TableHead>{t('myJobListings.colApplications')}</TableHead>
-                <TableHead>{t('myJobListings.colPosted')}</TableHead>
-                <TableHead className="w-36" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell>
-                    <p className="font-medium">{job.title}</p>
+      {/* Table */}
+      <div className="flex-1 overflow-auto">
+        {loading ? (
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <p>{t('myJobListings.noListings')}</p>
+            <Button variant="link" onClick={openCreate}>{t('myJobListings.createFirst')}</Button>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40 text-left">
+                <th className="px-4 py-2.5 font-medium text-muted-foreground w-10">#</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground">{t('myJobListings.colTitle')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground">{t('myJobListings.colStatus')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-right">{t('myJobListings.colApplications')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground">{t('myJobListings.colPosted')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground w-40 text-right">{t('admin.table.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job, i) => (
+                <tr key={job.id} className="border-b hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{i + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium leading-tight">{job.title}</div>
                     {job.location && (
-                      <p className="text-xs text-muted-foreground">{job.location}</p>
+                      <div className="text-xs text-muted-foreground">{job.location}</div>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={STATUS_BADGE[normalizeJobStatus(job.status)] ?? 'bg-gray-100'}>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[normalizeJobStatus(job.status)] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                       {normalizeJobStatus(job.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{job.applicationsCount}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">{job.applicationsCount}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                     {format(new Date(job.createdAt), 'MMM d, yyyy')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 items-center">
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex gap-1 items-center justify-end">
                       <Button
                         variant="outline"
                         size="sm"
@@ -258,25 +254,25 @@ export default function HrJobListings() {
                           </span>
                         )}
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(job)}>
-                        <Pencil className="w-4 h-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(job)}>
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-destructive hover:text-destructive"
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10"
                         onClick={() => setDeleteId(job.id)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* Create / Edit Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>

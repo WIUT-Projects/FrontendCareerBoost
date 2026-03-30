@@ -47,6 +47,8 @@ function HrMessagesPanel() {
   const bottomRef                 = useRef<HTMLDivElement>(null);
 
   const myId = Number(profile?.id ?? 0);
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
 
   // ── conversations ──────────────────────────────────────────────────────────
   const loadConvs = useCallback(() => {
@@ -56,6 +58,24 @@ function HrMessagesPanel() {
 
   useEffect(() => { loadConvs(); }, [loadConvs]);
   useEffect(() => onHubEvent('new_message', loadConvs), [loadConvs]);
+
+  // ── open-chat external trigger (from HR Verification page) ─────────────────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { partnerId, partnerName, partnerAvatar } = (e as CustomEvent).detail;
+      const token = sessionRef.current?.access_token;
+      if (!token) return;
+      setOpen(true);
+      setMessages([]);
+      setActive({ partnerId, partnerName, partnerAvatar, lastMessage: null, lastMessageAt: null, unreadCount: 0 });
+      getMessages(token, partnerId).then(msgs => {
+        setMessages(msgs);
+        markAsRead(token, partnerId);
+      }).catch(() => {});
+    };
+    window.addEventListener('open-chat', handler);
+    return () => window.removeEventListener('open-chat', handler);
+  }, []);
 
   // ── chat view ──────────────────────────────────────────────────────────────
   const openChat = useCallback((conv: ConversationItem) => {

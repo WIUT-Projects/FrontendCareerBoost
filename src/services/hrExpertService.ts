@@ -15,6 +15,8 @@ export interface HrExpertItem {
   isVerified: boolean;
 }
 
+export type HrExpertProfileResponse = HrExpertItem;
+
 export interface HrExpertsPage {
   items: HrExpertItem[];
   totalCount: number;

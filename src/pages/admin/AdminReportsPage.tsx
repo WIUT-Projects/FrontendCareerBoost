@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MessageSquareWarning, Search, Filter, Loader2,
   CheckCircle2, Clock, AlertCircle, Eye, X,
@@ -49,13 +50,10 @@ const STATUS_CONFIG: Record<ComplaintStatus, { label: string; icon: typeof Clock
   rejected:    { label: 'Rejected',    icon: X,             cls: 'bg-rose-50 text-rose-700 border-rose-200' },
 };
 
-const CATEGORY_LABELS: Record<ComplaintCategory, string> = {
-  bug: 'Bug', content: 'Content', user: 'Profile', payment: 'Payment', other: 'Other',
-};
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminReportsPage() {
+  const { t } = useTranslation();
   const [complaints, setComplaints] = useState<Complaint[]>(MOCK_COMPLAINTS);
   const [search, setSearch]         = useState('');
   const [statusFilter, setStatus]   = useState<'all' | ComplaintStatus>('all');
@@ -87,13 +85,13 @@ export default function AdminReportsPage() {
       <div className="flex-shrink-0 border-b px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <MessageSquareWarning className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-bold">Complaints</h1>
+          <h1 className="text-xl font-bold">{t('admin.reports.title')}</h1>
         </div>
         {/* Summary chips */}
         <div className="flex items-center gap-2 text-xs">
-          <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5 font-medium">{counts.new} new</span>
-          <span className="bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-medium">{counts.in_progress} in progress</span>
-          <span className="bg-green-50 text-green-700 border border-green-200 rounded-full px-2.5 py-0.5 font-medium">{counts.resolved} resolved</span>
+          <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5 font-medium">{t('admin.reports.chipNew', { n: counts.new })}</span>
+          <span className="bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-medium">{t('admin.reports.chipInProgress', { n: counts.in_progress })}</span>
+          <span className="bg-green-50 text-green-700 border border-green-200 rounded-full px-2.5 py-0.5 font-medium">{t('admin.reports.chipResolved', { n: counts.resolved })}</span>
         </div>
       </div>
 
@@ -101,19 +99,19 @@ export default function AdminReportsPage() {
       <div className="flex-shrink-0 border-b bg-muted/30 px-6 py-2.5 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search subject, user…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" />
+          <Input placeholder={t('admin.reports.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" />
         </div>
         <Select value={statusFilter} onValueChange={(v) => setStatus(v as typeof statusFilter)}>
           <SelectTrigger className="w-36 h-8 text-sm">
             <Filter className="h-3 w-3 mr-1" />
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t('admin.reports.table.status')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="all">{t('admin.reports.allStatuses')}</SelectItem>
+            <SelectItem value="new">{t('admin.reports.status.new')}</SelectItem>
+            <SelectItem value="in_progress">{t('admin.reports.status.in_progress')}</SelectItem>
+            <SelectItem value="resolved">{t('admin.reports.status.resolved')}</SelectItem>
+            <SelectItem value="rejected">{t('admin.reports.status.rejected')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -124,12 +122,12 @@ export default function AdminReportsPage() {
           <thead>
             <tr className="border-b bg-muted/40 text-left">
               <th className="px-4 py-2.5 font-medium text-muted-foreground w-10">#</th>
-              <th className="px-4 py-2.5 font-medium text-muted-foreground">User</th>
-              <th className="px-4 py-2.5 font-medium text-muted-foreground">Subject</th>
-              <th className="px-4 py-2.5 font-medium text-muted-foreground w-24">Category</th>
-              <th className="px-4 py-2.5 font-medium text-muted-foreground w-28">Status</th>
-              <th className="px-4 py-2.5 font-medium text-muted-foreground w-24">Date</th>
-              <th className="px-4 py-2.5 font-medium text-muted-foreground w-20 text-right">Actions</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground">{t('admin.reports.table.user')}</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground">{t('admin.reports.table.subject')}</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground w-24">{t('admin.reports.table.category')}</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground w-28">{t('admin.reports.table.status')}</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground w-24">{t('admin.reports.table.date')}</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground w-20 text-right">{t('admin.reports.table.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -137,7 +135,7 @@ export default function AdminReportsPage() {
               <tr>
                 <td colSpan={7} className="text-center py-20 text-muted-foreground text-sm">
                   <MessageSquareWarning className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                  No complaints found
+                  {t('admin.reports.noComplaints')}
                 </td>
               </tr>
             ) : filtered.map((c, i) => {
@@ -154,12 +152,12 @@ export default function AdminReportsPage() {
                     <span className="line-clamp-1">{c.subject}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant="outline" className="text-xs font-normal">{CATEGORY_LABELS[c.category]}</Badge>
+                    <Badge variant="outline" className="text-xs font-normal">{t(`admin.reports.category.${c.category}`)}</Badge>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>
                       <Icon className="h-3 w-3" />
-                      {cfg.label}
+                      {t(`admin.reports.status.${c.status}`)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
@@ -190,18 +188,18 @@ export default function AdminReportsPage() {
             <div className="space-y-4 text-sm">
               <div className="flex items-center gap-4 text-muted-foreground">
                 <span><strong className="text-foreground">{selected.userName}</strong> · {selected.userEmail}</span>
-                <Badge variant="outline" className="text-xs">{CATEGORY_LABELS[selected.category]}</Badge>
+                <Badge variant="outline" className="text-xs">{t(`admin.reports.category.${selected.category}`)}</Badge>
               </div>
               <div className="bg-muted/50 rounded-lg p-4 leading-relaxed text-sm">
                 {selected.message}
               </div>
               <div className="text-xs text-muted-foreground">
-                Submitted: {new Date(selected.createdAt).toLocaleString()}
-                {selected.resolvedAt && <span> · Resolved: {new Date(selected.resolvedAt).toLocaleString()}</span>}
+                {t('admin.reports.submitted', { date: new Date(selected.createdAt).toLocaleString() })}
+                {selected.resolvedAt && <span> {t('admin.reports.resolvedAt', { date: new Date(selected.resolvedAt).toLocaleString() })}</span>}
               </div>
               {/* Status actions */}
               <div className="flex items-center gap-2 pt-2 border-t">
-                <span className="text-xs text-muted-foreground mr-1">Change status:</span>
+                <span className="text-xs text-muted-foreground mr-1">{t('admin.reports.changeStatus')}</span>
                 {(['in_progress', 'resolved', 'rejected'] as ComplaintStatus[]).map((s) => {
                   const cfg = STATUS_CONFIG[s];
                   const Icon = cfg.icon;
@@ -214,7 +212,7 @@ export default function AdminReportsPage() {
                       onClick={() => changeStatus(selected.id, s)}
                     >
                       <Icon className="h-3 w-3" />
-                      {cfg.label}
+                      {t(`admin.reports.status.${s}`)}
                     </Button>
                   );
                 })}

@@ -19,7 +19,7 @@ export default function AdminAiUsagePage() {
         const data = await getAiUsageStats(session.accessToken);
         setStats(data);
       } catch (err: any) {
-        setError(err.message || 'Failed to load AI usage stats');
+        setError(t('admin.aiUsage.loadError'));
       } finally {
         setLoading(false);
       }
@@ -45,7 +45,7 @@ export default function AdminAiUsagePage() {
   if (!stats) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3 p-6">
-        <p className="text-muted-foreground">No AI usage data available</p>
+        <p className="text-muted-foreground">{t('admin.aiUsage.noData')}</p>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function AdminAiUsagePage() {
       {/* Header */}
       <div className="flex-shrink-0 border-b bg-background px-6 py-4 flex items-center gap-3">
         <Brain className="h-5 w-5 text-primary" />
-        <h1 className="text-xl font-bold">AI Usage Statistics</h1>
+        <h1 className="text-xl font-bold">{t('admin.aiUsage.title')}</h1>
       </div>
 
       {/* Content */}
@@ -72,49 +72,52 @@ export default function AdminAiUsagePage() {
             {/* Total Analyses */}
             <div className="rounded-lg border bg-card p-6 space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-muted-foreground">Total Analyses</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('admin.aiUsage.totalAnalyses')}</label>
                 <TrendingUp className="h-4 w-4 text-primary/60" />
               </div>
               <div className="text-3xl font-bold">{stats.totalAnalyses.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">All-time analyses performed</p>
+              <p className="text-xs text-muted-foreground">{t('admin.aiUsage.allTimeDesc')}</p>
             </div>
 
             {/* Total Tokens */}
             <div className="rounded-lg border bg-card p-6 space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-muted-foreground">Total Tokens</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('admin.aiUsage.totalTokens')}</label>
                 <Zap className="h-4 w-4 text-yellow-500/60" />
               </div>
               <div className="text-3xl font-bold">
                 {(totalTokens / 1_000_000).toFixed(2)}M
               </div>
               <p className="text-xs text-muted-foreground">
-                Input: {(stats.totalTokensInput / 1_000_000).toFixed(2)}M • Output: {(stats.totalTokensOutput / 1_000_000).toFixed(2)}M
+                {t('admin.aiUsage.tokenBreakdown', {
+                  input: (stats.totalTokensInput / 1_000_000).toFixed(2),
+                  output: (stats.totalTokensOutput / 1_000_000).toFixed(2),
+                })}
               </p>
             </div>
 
             {/* Total Cost */}
             <div className="rounded-lg border bg-card p-6 space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-muted-foreground">Total Cost</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('admin.aiUsage.totalCost')}</label>
                 <DollarSign className="h-4 w-4 text-green-500/60" />
               </div>
               <div className="text-3xl font-bold">${stats.totalCostUsd.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">USD cost of all analyses</p>
+              <p className="text-xs text-muted-foreground">{t('admin.aiUsage.usdCostDesc')}</p>
             </div>
 
             {/* Avg Cost Per Analysis */}
             <div className="rounded-lg border bg-card p-6 space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Avg Cost</label>
+              <label className="text-sm font-medium text-muted-foreground">{t('admin.aiUsage.avgCost')}</label>
               <div className="text-3xl font-bold">${avgCostPerAnalysis}</div>
-              <p className="text-xs text-muted-foreground">Per analysis</p>
+              <p className="text-xs text-muted-foreground">{t('admin.aiUsage.perAnalysis')}</p>
             </div>
           </div>
 
           {/* Model Breakdown */}
           {Object.keys(stats.byModel).length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Model Breakdown</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t('admin.aiUsage.modelBreakdown')}</h2>
               <div className="space-y-2">
                 {Object.entries(stats.byModel).map(([model, modelStats]) => (
                   <ModelCard key={model} model={model} stats={modelStats} />
@@ -129,6 +132,7 @@ export default function AdminAiUsagePage() {
 }
 
 function ModelCard({ model, stats }: { model: string; stats: ModelStats }) {
+  const { t } = useTranslation();
   const totalTokens = stats.tokensInput + stats.tokensOutput;
   const percentage = Math.round((stats.tokensInput / totalTokens) * 100);
 
@@ -142,11 +146,11 @@ function ModelCard({ model, stats }: { model: string; stats: ModelStats }) {
       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
         <div>
           <p className="font-medium text-foreground">{stats.count}</p>
-          <p>Analyses</p>
+          <p>{t('admin.aiUsage.analyses')}</p>
         </div>
         <div>
           <p className="font-medium text-foreground">{(totalTokens / 1_000_000).toFixed(2)}M</p>
-          <p>Tokens</p>
+          <p>{t('admin.aiUsage.tokens')}</p>
         </div>
       </div>
 
@@ -157,7 +161,7 @@ function ModelCard({ model, stats }: { model: string; stats: ModelStats }) {
           <div className="h-full bg-emerald-500" style={{ width: `${100 - percentage}%` }} />
         </div>
         <span className="text-muted-foreground min-w-max">
-          In: {percentage}% Out: {100 - percentage}%
+          {t('admin.aiUsage.tokenRatio', { pct: percentage, outPct: 100 - percentage })}
         </span>
       </div>
     </div>

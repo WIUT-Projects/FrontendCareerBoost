@@ -106,17 +106,14 @@ export default function TemplateDetailPage() {
                 {template.category && (
                   <p className="text-muted-foreground text-sm mt-1">{template.category}</p>
                 )}
-                <div className="flex gap-2 mt-3">
-                  <Badge variant={template.tier === 'premium' ? 'default' : 'secondary'}>
-                    {template.tier === 'premium' ? t('resume.premium') : t('resume.free')}
-                  </Badge>
-                  {template.downloadCount > 0 && (
+                {template.downloadCount > 0 && (
+                  <div className="flex gap-2 mt-3">
                     <Badge variant="outline" className="gap-1">
                       <Download className="h-3 w-3" />
                       {template.downloadCount} {t('resume.downloads')}
                     </Badge>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {error && (
@@ -145,7 +142,7 @@ export default function TemplateDetailPage() {
               <div className="border rounded-xl overflow-hidden shadow-lg">
                 <div className="overflow-auto max-h-[75vh] bg-gray-50 flex justify-center p-4">
                   <div style={{ zoom: 0.7, width: '210mm' }}>
-                    <ResumeRenderer sections={DEMO_SECTIONS} templateId={template.id} />
+                    <ResumeRenderer sections={DEMO_SECTIONS} templateName={template.name} templateId={template.id} />
                   </div>
                 </div>
               </div>

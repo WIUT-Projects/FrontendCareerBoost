@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   BookOpen, Search, Loader2, Plus, Eye, Pencil, Trash2,
   CheckCircle2, Clock, Archive, ChevronLeft, ChevronRight,
@@ -36,6 +37,7 @@ const PAGE_SIZE = 15;
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminBlogPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [articles, setArticles]       = useState<ArticleDto[]>([]);
   const [total, setTotal]             = useState(0);
@@ -100,12 +102,12 @@ export default function AdminBlogPage() {
       <div className="flex-shrink-0 border-b px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-bold">Blog Posts</h1>
+          <h1 className="text-xl font-bold">{t('admin.blog.title')}</h1>
           <span className="ml-1 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{total}</span>
         </div>
         <Button size="sm" className="gap-1.5" onClick={() => navigate('/admin/blog/new')}>
           <Plus className="h-4 w-4" />
-          New Article
+          {t('admin.blog.newArticle')}
         </Button>
       </div>
 
@@ -113,17 +115,17 @@ export default function AdminBlogPage() {
       <div className="flex-shrink-0 border-b bg-muted/30 px-6 py-2.5 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search title, author…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" />
+          <Input placeholder={t('admin.blog.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" />
         </div>
         <Select value={statusFilter} onValueChange={(v) => { setStatus(v as typeof statusFilter); setPage(1); }}>
           <SelectTrigger className="w-36 h-8 text-sm">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue placeholder={t('admin.blog.allStatuses')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
+            <SelectItem value="all">{t('admin.blog.allStatuses')}</SelectItem>
+            <SelectItem value="published">{t('admin.blog.status.published')}</SelectItem>
+            <SelectItem value="draft">{t('admin.blog.status.draft')}</SelectItem>
+            <SelectItem value="archived">{t('admin.blog.status.archived')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -139,13 +141,13 @@ export default function AdminBlogPage() {
             <thead>
               <tr className="border-b bg-muted/40 text-left">
                 <th className="px-4 py-2.5 font-medium text-muted-foreground w-10">#</th>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground">Title</th>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Author</th>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">Category</th>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground w-28">Status</th>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground w-20 hidden sm:table-cell">Views</th>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground w-24 hidden md:table-cell">Date</th>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground w-28 text-right">Actions</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground">{t('admin.blog.table.title')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">{t('admin.blog.table.author')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">{t('admin.blog.table.category')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground w-28">{t('admin.blog.table.status')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground w-20 hidden sm:table-cell">{t('admin.blog.table.views')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground w-24 hidden md:table-cell">{t('admin.blog.table.date')}</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground w-28 text-right">{t('admin.blog.table.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -153,7 +155,7 @@ export default function AdminBlogPage() {
                 <tr>
                   <td colSpan={8} className="text-center py-20 text-muted-foreground text-sm">
                     <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                    No articles found
+                    {t('admin.blog.noArticles')}
                   </td>
                 </tr>
               ) : filtered.map((article, i) => {
@@ -185,7 +187,7 @@ export default function AdminBlogPage() {
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>
                         <Icon className="h-3 w-3" />
-                        {cfg.label}
+                        {t(`admin.blog.status.${article.status ?? 'draft'}`)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">
@@ -208,7 +210,7 @@ export default function AdminBlogPage() {
                             className="h-7 w-7 text-green-600 hover:bg-green-50"
                             disabled={isActioning}
                             onClick={() => handlePublish(article)}
-                            title="Publish"
+                            title={t('admin.blog.publish')}
                           >
                             {isActioning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                           </Button>
@@ -218,7 +220,7 @@ export default function AdminBlogPage() {
                           variant="ghost" size="icon"
                           className="h-7 w-7"
                           onClick={() => navigate(`/admin/blog/${article.id}`)}
-                          title="Edit"
+                          title={t('admin.blog.edit')}
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -231,18 +233,18 @@ export default function AdminBlogPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete article?</AlertDialogTitle>
+                              <AlertDialogTitle>{t('admin.blog.deleteTitle')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                "<strong>{article.title}</strong>" will be permanently deleted.
+                                {t('admin.blog.deleteDesc', { title: article.title })}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t('admin.cancel')}</AlertDialogCancel>
                               <AlertDialogAction
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 onClick={() => handleDelete(article.id)}
                               >
-                                Delete
+                                {t('admin.delete')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -260,7 +262,7 @@ export default function AdminBlogPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex-shrink-0 border-t px-6 py-2.5 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground text-xs">Page {page} of {totalPages} · {total} articles</span>
+          <span className="text-muted-foreground text-xs">{t('admin.blog.pagination', { page, totalPages, total })}</span>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
               <ChevronLeft className="h-4 w-4" />
@@ -299,7 +301,7 @@ export default function AdminBlogPage() {
                   <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-muted-foreground">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>
                       <Icon className="h-3 w-3" />
-                      {cfg.label}
+                      {t(`admin.blog.status.${preview.status ?? 'draft'}`)}
                     </span>
                     {preview.categoryName && (
                       <Badge variant="secondary" className="text-[11px] font-normal">{preview.categoryName}</Badge>
@@ -316,10 +318,10 @@ export default function AdminBlogPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
-                      {preview.viewsCount ?? 0} views
+                      {t('admin.blog.views', { count: preview.viewsCount ?? 0 })}
                     </span>
                     {preview.readingTime > 0 && (
-                      <span>{preview.readingTime} min read</span>
+                      <span>{t('admin.blog.minRead', { n: preview.readingTime })}</span>
                     )}
                   </div>
 
@@ -355,7 +357,7 @@ export default function AdminBlogPage() {
                       dangerouslySetInnerHTML={{ __html: preview.body }}
                     />
                   ) : (
-                    <p className="text-muted-foreground text-sm italic">No content yet.</p>
+                    <p className="text-muted-foreground text-sm italic">{t('admin.blog.noContent')}</p>
                   )}
                 </div>
 
@@ -368,7 +370,7 @@ export default function AdminBlogPage() {
                       onClick={() => { handlePublish(preview); setPreview(null); }}
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Publish
+                      {t('admin.blog.publish')}
                     </Button>
                   )}
                   <Button
@@ -378,7 +380,7 @@ export default function AdminBlogPage() {
                     onClick={() => { navigate(`/admin/blog/${preview.id}`); setPreview(null); }}
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                    Edit
+                    {t('admin.blog.edit')}
                   </Button>
                 </div>
               </>

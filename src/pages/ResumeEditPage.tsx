@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Download, Loader2, ArrowLeft, Save,
   User, GraduationCap, Briefcase, FolderOpen, Code2, Languages,
+  ChevronDown, FileText, FileType2, Crown,
 } from 'lucide-react';
 import { AiReviewButton } from '@/components/resume/AiReviewButton';
 import { Button } from '@/components/ui/button';
@@ -18,12 +19,119 @@ import LanguagesForm from '@/components/resume/forms/LanguagesForm';
 import { getResumeById, upsertSection } from '@/services/resumeService';
 import { analyzeResumeById } from '@/services/aiAnalysisService';
 import { loadSession } from '@/services/authService';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { toast } from 'sonner';
 import type {
   ResumeDto, ResumeSectionDto, SectionType,
   OverviewContent, EducationItem, ExperienceItem,
   ProjectItem, SkillCategory, LanguageItem,
 } from '@/types/resume';
 import { EMPTY_OVERVIEW, parseSections } from '@/types/resume';
+
+// ─── Word doc builder ────────────────────────────────────────────────────────
+
+function buildWordDoc(params: {
+  resumeTitle: string;
+  overview: OverviewContent;
+  experience: ExperienceItem[];
+  education: EducationItem[];
+  projects: ProjectItem[];
+  skills: SkillCategory[];
+  languages: LanguageItem[];
+}): string {
+  const { resumeTitle, overview, experience, education, projects, skills, languages } = params;
+  const esc = (s: string | null | undefined) =>
+    (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
+  xmlns:w='urn:schemas-microsoft-com:office:word'
+  xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>${esc(resumeTitle)}</title>
+<style>
+  @page { size: A4; margin: 18mm 22mm; }
+  body { font-family: Arial, sans-serif; font-size: 10pt; color: #1a1a1a; }
+  h1 { font-size: 20pt; margin: 0 0 3pt; }
+  .subtitle { font-size: 11pt; color: #555; margin: 0 0 5pt; }
+  .contact { font-size: 9pt; color: #666; margin-bottom: 14pt; }
+  h2 { font-size: 12pt; border-bottom: 1pt solid #888; padding-bottom: 2pt;
+       margin: 14pt 0 6pt; text-transform: uppercase; letter-spacing: 0.5pt; }
+  .entry { margin-bottom: 8pt; }
+  .row { display: flex; justify-content: space-between; }
+  strong { font-size: 10pt; }
+  .meta { font-size: 9pt; color: #666; }
+  ul { margin: 2pt 0 4pt 0; padding-left: 14pt; }
+  li { margin: 1pt 0; }
+  p { margin: 2pt 0; }
+  .skill-row { margin-bottom: 4pt; }
+</style></head><body>`;
+
+  // ── Header
+  html += `<h1>${esc(overview.fullName)}</h1>`;
+  if (overview.title) html += `<p class="subtitle">${esc(overview.title)}</p>`;
+  const contacts = [overview.email, overview.phone, overview.location, overview.website].filter(Boolean);
+  if (contacts.length) html += `<p class="contact">${contacts.map(esc).join(' &nbsp;|&nbsp; ')}</p>`;
+  if (overview.summary) html += `<h2>Summary</h2><p>${esc(overview.summary)}</p>`;
+
+  // ── Experience
+  if (experience.length > 0) {
+    html += `<h2>Experience</h2>`;
+    for (const e of experience) {
+      const dateRange = e.current
+        ? `${esc(e.startDate)} – Present`
+        : [e.startDate, e.endDate].filter(Boolean).map(esc).join(' – ');
+      html += `<div class="entry">`;
+      html += `<div class="row"><strong>${esc(e.position)}</strong><span class="meta">${dateRange}</span></div>`;
+      html += `<p class="meta">${esc(e.company)}</p>`;
+      if (e.bullets?.length) html += `<ul>${e.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>`;
+      html += `</div>`;
+    }
+  }
+
+  // ── Education
+  if (education.length > 0) {
+    html += `<h2>Education</h2>`;
+    for (const e of education) {
+      const dateRange = e.current
+        ? `${esc(e.startDate)} – Present`
+        : [e.startDate, e.endDate].filter(Boolean).map(esc).join(' – ');
+      html += `<div class="entry">`;
+      html += `<div class="row"><strong>${esc(e.school)}</strong><span class="meta">${dateRange}</span></div>`;
+      const deg = [e.degree, e.field].filter(Boolean).map(esc).join(', ');
+      if (deg) html += `<p class="meta">${deg}</p>`;
+      html += `</div>`;
+    }
+  }
+
+  // ── Projects
+  if (projects.length > 0) {
+    html += `<h2>Projects</h2>`;
+    for (const p of projects) {
+      html += `<div class="entry">`;
+      html += `<div class="row"><strong>${esc(p.name)}</strong>${p.url ? `<span class="meta">${esc(p.url)}</span>` : ''}</div>`;
+      if (p.technologies?.length) html += `<p class="meta">${p.technologies.map(esc).join(', ')}</p>`;
+      if (p.description) html += `<p>${esc(p.description)}</p>`;
+      if (p.bullets?.length) html += `<ul>${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>`;
+      html += `</div>`;
+    }
+  }
+
+  // ── Skills
+  if (skills.length > 0) {
+    html += `<h2>Skills</h2>`;
+    for (const s of skills) {
+      html += `<div class="skill-row"><strong>${esc(s.name)}:</strong> ${s.skills.map(esc).join(', ')}</div>`;
+    }
+  }
+
+  // ── Languages
+  if (languages.length > 0) {
+    html += `<h2>Languages</h2>`;
+    html += `<p>${languages.map(l => `${esc(l.language)}${l.proficiency ? ` (${esc(l.proficiency)})` : ''}`).join(', ')}</p>`;
+  }
+
+  html += `</body></html>`;
+  return html;
+}
 
 const SECTION_ICONS: Record<SectionType, React.ElementType> = {
   overview: User,
@@ -51,12 +159,29 @@ export default function ResumeEditPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const session = loadSession();
+  const { data: subStatus } = useSubscriptionStatus();
+  const isPro = subStatus?.hasActivePlan ?? false;
 
   const [resume, setResume] = useState<ResumeDto | null>(null);
   const [sections, setSections] = useState<ResumeSectionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<SectionType>('overview');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Export format dropdown
+  const [formatMenuOpen, setFormatMenuOpen] = useState(false);
+  const formatMenuDesktopRef = useRef<HTMLDivElement>(null);
+  const formatMenuMobileRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const insideDesktop = formatMenuDesktopRef.current?.contains(target);
+      const insideMobile = formatMenuMobileRef.current?.contains(target);
+      if (!insideDesktop && !insideMobile) setFormatMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // ── AI Analysis ──────────────────────────────────────────────────────────
   const [analyzing, setAnalyzing] = useState(false);
@@ -326,6 +451,40 @@ export default function ResumeEditPage() {
     }
   };
 
+  // ─── Word (.doc) Download ─────────────────────────────────────────────────────
+  const handleWordDownload = () => {
+    const html = buildWordDoc({
+      resumeTitle: title,
+      overview,
+      experience,
+      education,
+      projects,
+      skills,
+      languages,
+    });
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title || 'resume'}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // ─── Export dispatcher (premium gate) ────────────────────────────────────────
+  const handleExport = (format: 'pdf' | 'word') => {
+    setFormatMenuOpen(false);
+    if (!isPro) {
+      toast.error(t('resume.downloadProOnly'));
+      navigate('/settings/subscription');
+      return;
+    }
+    if (format === 'pdf') handleDownload();
+    else handleWordDownload();
+  };
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -374,10 +533,33 @@ export default function ResumeEditPage() {
                   : <Save className="h-3 w-3" />}
               </span>
             )}
-            {/* Mobile-only: Download + AI Review */}
-            <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7 flex-shrink-0" onClick={handleDownload} disabled={pdfGenerating}>
-              {pdfGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-            </Button>
+            {/* Mobile-only: Download dropdown */}
+            <div ref={formatMenuMobileRef} className="lg:hidden relative flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setFormatMenuOpen(o => !o)}
+                disabled={pdfGenerating}
+              >
+                {pdfGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              </Button>
+              {formatMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 rounded-xl border bg-popover shadow-lg z-50 py-1 overflow-hidden">
+                  {!isPro && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 border-b">
+                      <Crown className="h-3 w-3" /> Pro plan required
+                    </div>
+                  )}
+                  <button onClick={() => handleExport('pdf')} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent transition-colors">
+                    <FileText className="h-3.5 w-3.5 text-red-500" /> {t('resume.downloadPdf')}
+                  </button>
+                  <button onClick={() => handleExport('word')} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent transition-colors">
+                    <FileType2 className="h-3.5 w-3.5 text-blue-500" /> {t('resume.downloadWord')}
+                  </button>
+                </div>
+              )}
+            </div>
             <span className="lg:hidden flex-shrink-0">
               <AiReviewButton variant="icon" size="sm" onClick={handleAiReview} loading={analyzing} />
             </span>
@@ -457,19 +639,52 @@ export default function ResumeEditPage() {
         <div className="flex flex-col lg:w-[54%] overflow-hidden min-h-[300px] lg:min-h-0">
           {/* Desktop-only: Download + AI Review strip */}
           <div className="hidden lg:flex flex-shrink-0 border-b bg-gray-100 items-center justify-end gap-2.5 px-4 py-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload} disabled={pdfGenerating}>
-              {pdfGenerating
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <Download className="h-4 w-4" />}
-              {pdfGenerating ? 'Generating…' : t('resume.download')}
-            </Button>
+            {/* Export dropdown */}
+            <div ref={formatMenuDesktopRef} className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setFormatMenuOpen(o => !o)}
+                disabled={pdfGenerating}
+              >
+                {pdfGenerating
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Download className="h-4 w-4" />}
+                {pdfGenerating ? 'Generating…' : t('resume.download')}
+                <ChevronDown className="h-3.5 w-3.5 ml-0.5 opacity-60" />
+              </Button>
+              {formatMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-52 rounded-xl border bg-popover shadow-lg z-50 py-1 overflow-hidden">
+                  {!isPro && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 border-b">
+                      <Crown className="h-3 w-3" /> Pro plan required
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleExport('pdf')}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-accent transition-colors"
+                  >
+                    <FileText className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <span>{t('resume.downloadPdf')}</span>
+                  </button>
+                  <button
+                    onClick={() => handleExport('word')}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-accent transition-colors"
+                  >
+                    <FileType2 className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                    <span>{t('resume.downloadWord')}</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <AiReviewButton size="sm" onClick={handleAiReview} loading={analyzing} />
           </div>
 
           {/* Scrollable preview */}
           <div className="flex-1 overflow-auto bg-gray-100 flex justify-center py-4">
             <div style={{ zoom: 0.72, width: '210mm', flexShrink: 0 }}>
-              <ResumeRenderer sections={sections} templateId={resume.templateId} />
+              <ResumeRenderer sections={sections} templateId={resume.templateId} templateName={resume.templateName} />
             </div>
           </div>
         </div>
@@ -494,7 +709,7 @@ export default function ResumeEditPage() {
         }}
       >
         <div ref={pdfRef}>
-          <ResumeRenderer sections={sections} templateId={resume.templateId} />
+          <ResumeRenderer sections={sections} templateId={resume.templateId} templateName={resume.templateName} />
         </div>
       </div>
     </div>

@@ -55,6 +55,8 @@ function MessagesPanel() {
   const [sending, setSending]   = useState(false);
   const bottomRef               = useRef<HTMLDivElement>(null);
   const myId = Number(profile?.id ?? 0);
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
 
   const loadConvs = useCallback(() => {
     if (!session?.access_token) return;
@@ -63,6 +65,24 @@ function MessagesPanel() {
 
   useEffect(() => { loadConvs(); }, [loadConvs]);
   useEffect(() => onHubEvent('new_message', loadConvs), [loadConvs]);
+
+  // Open chat from external trigger via CustomEvent
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { partnerId, partnerName, partnerAvatar } = (e as CustomEvent).detail;
+      const token = sessionRef.current?.access_token;
+      if (!token) return;
+      setOpen(true);
+      setMessages([]);
+      setActive({ partnerId, partnerName, partnerAvatar, lastMessage: null, lastMessageAt: null, unreadCount: 0 });
+      getMessages(token, partnerId).then(msgs => {
+        setMessages(msgs);
+        markAsRead(token, partnerId);
+      }).catch(() => {});
+    };
+    window.addEventListener('open-chat', handler);
+    return () => window.removeEventListener('open-chat', handler);
+  }, []);
 
   const openChat = useCallback((conv: ConversationItem) => {
     if (!session?.access_token) return;

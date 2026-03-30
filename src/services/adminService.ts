@@ -29,11 +29,16 @@ export interface PagedUsers {
   totalPages: number;
 }
 
-export async function getUsers(pageIndex = 1, pageSize = 20): Promise<PagedUsers> {
-  const res = await fetch(
-    `${API_URL}/api/users?pageIndex=${pageIndex}&pageSize=${pageSize}`,
-    { headers: authHeaders() },
-  );
+export async function getUsers(
+  pageIndex = 1,
+  pageSize = 20,
+  search?: string,
+  role?: string,
+): Promise<PagedUsers> {
+  const params = new URLSearchParams({ pageIndex: String(pageIndex), pageSize: String(pageSize) });
+  if (search) params.set('search', search);
+  if (role && role !== 'all') params.set('role', role);
+  const res = await fetch(`${API_URL}/api/users?${params}`, { headers: authHeaders() });
   if (!res.ok) throw new Error(`Failed to fetch users: ${res.status}`);
   return res.json();
 }
@@ -98,6 +103,50 @@ export async function updateTemplate(id: number, payload: UpdateTemplatePayload)
   return res.json();
 }
 
+// ── Jobs ──────────────────────────────────────────────────────────────────
+
+export interface AdminJobDto {
+  id: number;
+  title: string;
+  companyName: string | null;
+  postedByName: string | null;
+  status: string; // 'draft' | 'active' | 'closed'
+  viewsCount: number;
+  applicationsCount: number;
+  createdAt: string;
+  expiresAt: string | null;
+}
+
+export interface PagedJobs {
+  items: AdminJobDto[];
+  totalCount: number;
+  pageIndex: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function getJobsAdmin(
+  pageIndex = 1,
+  pageSize = 20,
+  search?: string,
+  status?: string,
+): Promise<PagedJobs> {
+  const params = new URLSearchParams({ pageIndex: String(pageIndex), pageSize: String(pageSize) });
+  if (search) params.set('search', search);
+  if (status && status !== 'all') params.set('status', status);
+  const res = await fetch(`${API_URL}/api/admin/jobs?${params}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch jobs: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteJobAdmin(id: number): Promise<void> {
+  const res = await fetch(`${API_URL}/api/admin/jobs/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete job: ${res.status}`);
+}
+
 // ── AI Usage ───────────────────────────────────────────────────────────────
 
 export interface ModelStats {
@@ -121,4 +170,18 @@ export async function getAiUsageStats(token: string): Promise<AdminAiUsageStats>
   });
   if (!res.ok) throw new Error('Failed to fetch AI usage stats');
   return res.json();
+}
+
+// ── HR Verification ───────────────────────────────────────────────────────────
+
+export async function updateHrVerificationStatus(
+  hrUserId: number,
+  isVerified: boolean,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/api/hr-experts/${hrUserId}/verify`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify({ isVerified }),
+  });
+  if (!res.ok) throw new Error(`Failed to update HR verification: ${res.status}`);
 }

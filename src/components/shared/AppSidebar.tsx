@@ -49,6 +49,7 @@ export function AppSidebar() {
   const jobSeekerConnect = [
     { title: t('sidebar.blog'), url: '/blog', icon: BookOpen },
     { title: t('sidebar.messages'), url: '/messages', icon: MessageSquare },
+    { title: t('sidebar.billing', 'Billing'), url: '/settings/billing', icon: CreditCard },
   ];
 
   const hrExpertNav = [
@@ -57,7 +58,6 @@ export function AppSidebar() {
     { title: t('sidebar.availability'), url: '/hr-portal/availability', icon: Calendar },
     { title: t('sidebar.earnings', 'Earnings'), url: '/hr-portal/earnings', icon: DollarSign },
     { title: t('sidebar.myRatings'), url: '/hr-portal/ratings', icon: Star },
-    { title: t('sidebar.myProfile'), url: '/hr-portal/profile', icon: Users },
     { title: t('sidebar.jobListings'), url: '/hr-portal/jobs', icon: Briefcase },
     { title: t('sidebar.applicants'), url: '/hr-portal/applicants', icon: Users },
     { title: t('sidebar.blog'), url: '/blog', icon: BookOpen },

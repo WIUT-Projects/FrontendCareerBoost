@@ -42,7 +42,7 @@ export const HrReviewsPage = () => <PlaceholderPage icon={ClipboardList} title="
 export const HrReviewDetailPage = () => <PlaceholderPage icon={ClipboardList} title="Review Resume" description="Read the resume, write feedback, and assign scores." />;
 export { default as HrAvailabilityPage } from './HrAvailabilityPage';
 export const HrProfileEditPage = () => <PlaceholderPage icon={Users} title="HR Profile Editor" description="Edit your public profile, specializations, and photo." />;
-export const HrRatingsPage = () => <PlaceholderPage icon={Star} title="My Ratings" description="View all ratings and feedback from your clients." />;
+export { default as HrRatingsPage } from './HrRatingsPage';
 export { default as HrJobListingsPage } from './HrJobListings';
 export { default as HrApplicantsPage } from './HrApplicants';
 export { default as HrInterviewsPage } from './HrInterviewsPage';

@@ -17,12 +17,8 @@ import { createRefundRequest } from '@/services/refundService';
 import { resolveMediaUrl, cn, utcDate, formatLocalTime, isUpcoming } from '@/lib/utils';
 import { toast } from 'sonner';
 
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-
 function canRefund(booking: BookingItem): boolean {
-  if (booking.status !== 'Approved') return false;
-  if (isUpcoming(booking.scheduledAt)) return false;
-  return Date.now() - new Date(booking.scheduledAt).getTime() <= SEVEN_DAYS_MS;
+  return booking.status === 'Approved' && !isUpcoming(booking.scheduledAt);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

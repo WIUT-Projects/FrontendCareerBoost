@@ -54,7 +54,6 @@ export function AppSidebar() {
 
   const hrExpertNav = [
     { title: t('sidebar.hrDashboard'), url: '/hr-portal', icon: LayoutDashboard },
-    { title: t('sidebar.reviewQueue'), url: '/hr-portal/reviews', icon: ClipboardList },
     { title: t('sidebar.availability'), url: '/hr-portal/availability', icon: Calendar },
     { title: t('sidebar.earnings', 'Earnings'), url: '/hr-portal/earnings', icon: DollarSign },
     { title: t('sidebar.myRatings'), url: '/hr-portal/ratings', icon: Star },

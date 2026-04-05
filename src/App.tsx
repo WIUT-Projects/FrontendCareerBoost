@@ -25,7 +25,7 @@ import {
   InboxPage, ChatPage, NotificationsPage,
   ProfileSettingsPage, SubscriptionPage, SubscriptionSuccessPage, SubscriptionCancelPage, BillingPage, DangerZonePage,
   HrBookingSuccessPage, HrBookingCancelPage,
-  HrPortalDashboard, HrReviewsPage, HrReviewDetailPage, HrAvailabilityPage,
+  HrPortalDashboard, HrAvailabilityPage,
   HrProfileEditPage, HrRatingsPage, HrJobListingsPage, HrApplicantsPage, HrInterviewsPage,
   HrEarningsPage,
   AdminDashboard, AdminUsersPage, AdminResumesPage, AdminTemplatesPage,
@@ -108,8 +108,7 @@ const App = () => (
               <Route element={<ProtectedRoute allowedRoles={['hr_expert']} />}>
                 <Route element={<AppLayout />}>
                   <Route path="/hr-portal" element={<HrPortalDashboard />} />
-                  <Route path="/hr-portal/reviews" element={<HrReviewsPage />} />
-                  <Route path="/hr-portal/reviews/:id" element={<HrReviewDetailPage />} />
+
                   <Route path="/hr-portal/interviews" element={<HrInterviewsPage />} />
                   <Route path="/hr-portal/availability" element={<HrAvailabilityPage />} />
                   <Route path="/hr-portal/profile" element={<HrProfileEditPage />} />

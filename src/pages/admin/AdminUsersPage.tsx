@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Users, Search, Loader2, Trash2, ChevronLeft, ChevronRight,
-  ShieldCheck, UserCheck, User,
+  ShieldCheck, UserCheck, User, MessageSquare,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -39,6 +41,8 @@ function RoleBadge({ role }: { role: string }) {
 
 export default function AdminUsersPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user: me } = useAuth();
   const [users, setUsers] = useState<AdminUserDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -203,6 +207,19 @@ export default function AdminUsersPage() {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">
+                    {String(user.id) !== me?.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-primary hover:bg-primary/10"
+                        title="Send message"
+                        onClick={() => navigate(`/messages/${user.id}`, {
+                          state: { partnerName: user.fullName ?? user.email, partnerAvatar: null }
+                        })}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10">

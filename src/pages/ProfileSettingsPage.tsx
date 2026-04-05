@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   User, Lock, Briefcase, Eye, EyeOff,
   Save, Loader2, Upload, X, Camera,
-  CheckCircle2, Circle, ShieldCheck, Sparkles, AlertCircle,
+  CheckCircle2, Circle, ShieldCheck, Sparkles, AlertCircle, CreditCard,
 } from 'lucide-react';
 import * as authService from '@/services/authService';
 import { cn, resolveMediaUrl } from '@/lib/utils';
@@ -192,28 +193,37 @@ function Section({ icon: Icon, title, desc, children }: {
 
 function SettingsNav({ active, onChange }: { active: string; onChange: (v: string) => void }) {
   const { t } = useTranslation();
-  const items = [
-    { id: 'profile',  icon: User,       label: t('settings.tabProfile') },
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items: { id: string; icon: any; label: string; link?: string }[] = [
+    { id: 'profile',  icon: User,        label: t('settings.tabProfile') },
     { id: 'security', icon: ShieldCheck, label: t('settings.tabSecurity') },
+    { id: 'billing',  icon: CreditCard,  label: t('settings.tabBilling', 'Billing'), link: '/settings/billing' },
   ];
+
   return (
     <nav className="flex flex-col gap-1">
-      {items.map(({ id, icon: Icon, label }) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onChange(id)}
-          className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
-            active === id
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
-          )}
-        >
-          <Icon className="h-4 w-4 shrink-0" />
-          {label}
-        </button>
-      ))}
+      {items.map(({ id, icon: Icon, label, link }) => {
+        const isActive = link ? pathname === link : active === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => link ? navigate(link) : onChange(id)}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {label}
+          </button>
+        );
+      })}
     </nav>
   );
 }

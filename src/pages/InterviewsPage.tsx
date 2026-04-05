@@ -1,14 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, Video, ArrowRight, AlertCircle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
+import { Calendar, Clock, Video, ArrowRight, AlertCircle, Undo2 } from 'lucide-react';
 import { getMyBookings, type BookingItem } from '@/services/bookingService';
+import { createRefundRequest } from '@/services/refundService';
 import { resolveMediaUrl, cn, utcDate, formatLocalTime, isUpcoming } from '@/lib/utils';
 import { toast } from 'sonner';
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+function canRefund(booking: BookingItem): boolean {
+  if (booking.status !== 'Approved') return false;
+  if (isUpcoming(booking.scheduledAt)) return false;
+  return Date.now() - new Date(booking.scheduledAt).getTime() <= SEVEN_DAYS_MS;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -27,7 +42,7 @@ function StatusBadge({ status }: { status: string | null }) {
   return <Badge className="bg-amber-500/15 text-amber-600 border-0 font-medium">Pending</Badge>;
 }
 
-function BookingCard({ booking }: { booking: BookingItem }) {
+function BookingCard({ booking, onRefund }: { booking: BookingItem; onRefund?: (b: BookingItem) => void }) {
   const navigate = useNavigate();
   const initials = booking.hrExpertName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) ?? 'HR';
   const upcoming = isUpcoming(booking.scheduledAt);
@@ -92,6 +107,20 @@ function BookingCard({ booking }: { booking: BookingItem }) {
             Payment not completed — session not confirmed yet
           </p>
         )}
+
+        {canRefund(booking) && onRefund && (
+          <div className="mt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs h-7 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+              onClick={e => { e.stopPropagation(); onRefund(booking); }}
+            >
+              <Undo2 className="h-3.5 w-3.5 mr-1" />
+              Request Refund
+            </Button>
+          </div>
+        )}
       </div>
 
       <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -121,6 +150,25 @@ export default function InterviewsPage() {
   const [tab, setTab] = useState<Tab>('upcoming');
   const [allBookings, setAllBookings] = useState<BookingItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Refund dialog state
+  const [refundTarget, setRefundTarget] = useState<BookingItem | null>(null);
+  const [refundReason, setRefundReason] = useState('');
+
+  const refundMutation = useMutation({
+    mutationFn: () => {
+      if (!refundTarget) throw new Error('No booking selected');
+      return createRefundRequest(refundTarget.id, refundReason);
+    },
+    onSuccess: () => {
+      toast.success('Refund request submitted. Admin will review it within 1-2 business days.');
+      setRefundTarget(null);
+      setRefundReason('');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to submit refund request');
+    },
+  });
 
   useEffect(() => {
     if (!session?.access_token) return;
@@ -195,7 +243,7 @@ export default function InterviewsPage() {
           {loading
             ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
             : filtered.length > 0
-              ? filtered.map(b => <BookingCard key={b.id} booking={b} />)
+              ? filtered.map(b => <BookingCard key={b.id} booking={b} onRefund={setRefundTarget} />)
               : (
                 <div className="text-center py-16 text-muted-foreground">
                   <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -211,6 +259,53 @@ export default function InterviewsPage() {
           }
         </div>
       </div>
+
+      {/* Refund dialog */}
+      <Dialog open={!!refundTarget} onOpenChange={open => { if (!open) { setRefundTarget(null); setRefundReason(''); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Refund</DialogTitle>
+            <DialogDescription>
+              Describe why you're requesting a refund. Admin will review within 1-2 business days.
+              Refund requests are only accepted within 7 days of the session.
+            </DialogDescription>
+          </DialogHeader>
+          {refundTarget && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md bg-muted p-3 space-y-1">
+                <p className="font-medium">Session with {refundTarget.hrExpertName ?? 'HR Expert'}</p>
+                <p className="text-muted-foreground text-xs">
+                  {utcDate(refundTarget.scheduledAt).toLocaleDateString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+                  })}
+                  {' · '}{refundTarget.durationMinutes} min
+                </p>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Reason *</label>
+                <Textarea
+                  value={refundReason}
+                  onChange={e => setRefundReason(e.target.value)}
+                  placeholder="e.g. HR expert didn't show up, technical issues prevented the session, session quality was poor..."
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRefundTarget(null); setRefundReason(''); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => refundMutation.mutate()}
+              disabled={refundReason.trim().length < 10 || refundMutation.isPending}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              {refundMutation.isPending ? 'Submitting…' : 'Submit Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

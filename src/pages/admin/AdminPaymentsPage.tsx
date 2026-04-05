@@ -74,6 +74,10 @@ export default function AdminPaymentsPage() {
     queryFn: () => getAdminHrEarnings(),
   });
 
+  // Quick lookup: paymentId → earning (for "Mark paid" action in All Payments tab)
+  const earningByPaymentId = new Map<number, AdminHrEarning>();
+  (earningsQuery.data ?? []).forEach(e => earningByPaymentId.set(e.paymentId, e));
+
   const handleMarkPaid = async () => {
     if (!selectedEarning) return;
     try {
@@ -145,6 +149,8 @@ export default function AdminPaymentsPage() {
               search={search} setSearch={setSearch}
               onRefresh={() => paymentsQuery.refetch()}
               fetching={paymentsQuery.isFetching}
+              earningByPaymentId={earningByPaymentId}
+              onMarkPaid={(e) => setSelectedEarning(e)}
             />
           </TabsContent>
 
@@ -157,6 +163,8 @@ export default function AdminPaymentsPage() {
               search={search} setSearch={setSearch}
               onRefresh={() => paymentsQuery.refetch()}
               fetching={paymentsQuery.isFetching}
+              earningByPaymentId={earningByPaymentId}
+              onMarkPaid={(e) => setSelectedEarning(e)}
             />
           </TabsContent>
 
@@ -287,6 +295,7 @@ function StatCard({
 
 function PaymentsTable({
   items, loading, purpose, setPurpose, status, setStatus, search, setSearch, onRefresh, fetching,
+  earningByPaymentId, onMarkPaid,
 }: {
   items: AdminPaymentListItem[];
   loading: boolean;
@@ -295,6 +304,8 @@ function PaymentsTable({
   search: string; setSearch: (v: string) => void;
   onRefresh: () => void;
   fetching: boolean;
+  earningByPaymentId: Map<number, AdminHrEarning>;
+  onMarkPaid: (e: AdminHrEarning) => void;
 }) {
   return (
     <Card>
@@ -347,26 +358,39 @@ function PaymentsTable({
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payout</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map(p => (
-                <TableRow key={p.id}>
-                  <TableCell className="text-sm">{formatDate(p.createdAt)}</TableCell>
-                  <TableCell>
-                    <div className="font-medium">{p.userFullName ?? '—'}</div>
-                    <div className="text-xs text-muted-foreground">{p.userEmail}</div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {p.purpose === 'Booking'
-                      ? `${p.hrExpertName ?? 'HR'} · ${formatDate(p.scheduledAt)}`
-                      : (p.planName ?? p.templateName ?? '—')}
-                  </TableCell>
-                  <TableCell><Badge variant="outline">{p.purpose}</Badge></TableCell>
-                  <TableCell className="text-right font-semibold">{formatUzs(p.amountUzs)}</TableCell>
-                  <TableCell><Badge variant={statusVariant(p.status)}>{p.status}</Badge></TableCell>
-                </TableRow>
-              ))}
+              {items.map(p => {
+                const earning = p.bookingId ? earningByPaymentId.get(p.id) : undefined;
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-sm">{formatDate(p.createdAt)}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{p.userFullName ?? '—'}</div>
+                      <div className="text-xs text-muted-foreground">{p.userEmail}</div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {p.purpose === 'Booking'
+                        ? `${p.hrExpertName ?? 'HR'} · ${formatDate(p.scheduledAt)}`
+                        : (p.planName ?? p.templateName ?? '—')}
+                    </TableCell>
+                    <TableCell><Badge variant="outline">{p.purpose}</Badge></TableCell>
+                    <TableCell className="text-right font-semibold">{formatUzs(p.amountUzs)}</TableCell>
+                    <TableCell><Badge variant={statusVariant(p.status)}>{p.status}</Badge></TableCell>
+                    <TableCell>
+                      {earning?.status === 'Available' ? (
+                        <Button size="sm" onClick={() => onMarkPaid(earning)}>
+                          Mark paid
+                        </Button>
+                      ) : earning?.status === 'PaidOut' ? (
+                        <Badge variant="secondary">Paid out</Badge>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

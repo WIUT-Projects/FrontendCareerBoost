@@ -288,5 +288,14 @@ export async function markEarningPaidOut(earningId: number, note?: string): Prom
     headers: authHeaders(),
     body: JSON.stringify({ note: note ?? null }),
   });
-  if (!res.ok) throw new Error(`Failed to mark earning as paid: ${res.status}`);
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body?.detail || body?.title || body?.message || JSON.stringify(body);
+    } catch {
+      detail = await res.text().catch(() => '');
+    }
+    throw new Error(`Mark paid failed (${res.status}): ${detail || 'unknown error'}`);
+  }
 }

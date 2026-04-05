@@ -185,3 +185,108 @@ export async function updateHrVerificationStatus(
   });
   if (!res.ok) throw new Error(`Failed to update HR verification: ${res.status}`);
 }
+
+// ── Admin Payments ────────────────────────────────────────────────────────────
+
+export interface AdminPaymentsSummaryDto {
+  totalRevenue: number;
+  subscriptionRevenue: number;
+  templateRevenue: number;
+  bookingGrossRevenue: number;
+  escrowedBalance: number;
+  platformFeeEarned: number;
+  pendingPayouts: number;
+  totalPaidOutToHr: number;
+  totalPaymentsCount: number;
+}
+
+export interface AdminPaymentListItem {
+  id: number;
+  userId: number;
+  userEmail: string | null;
+  userFullName: string | null;
+  purpose: string;
+  status: string;
+  amountUzs: number;
+  paymentType: string | null;
+  stripeSessionId: string | null;
+  planName: string | null;
+  templateName: string | null;
+  bookingId: number | null;
+  hrExpertId: number | null;
+  hrExpertName: string | null;
+  scheduledAt: string | null;
+  createdAt: string;
+  paidAt: string | null;
+  releasedAt: string | null;
+}
+
+export interface AdminPaymentsListResponse {
+  items: AdminPaymentListItem[];
+  totalCount: number;
+  pageIndex: number;
+  pageSize: number;
+}
+
+export interface AdminPaymentsFilter {
+  purpose?: string;
+  status?: string;
+  search?: string;
+  pageIndex?: number;
+  pageSize?: number;
+}
+
+export async function getAdminPayments(filter: AdminPaymentsFilter = {}): Promise<AdminPaymentsListResponse> {
+  const params = new URLSearchParams();
+  if (filter.purpose) params.set('purpose', filter.purpose);
+  if (filter.status)  params.set('status', filter.status);
+  if (filter.search)  params.set('search', filter.search);
+  params.set('pageIndex', String(filter.pageIndex ?? 0));
+  params.set('pageSize',  String(filter.pageSize ?? 20));
+  const res = await fetch(`${API_URL}/api/admin/payments?${params.toString()}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch payments: ${res.status}`);
+  return res.json();
+}
+
+export async function getAdminPaymentsSummary(): Promise<AdminPaymentsSummaryDto> {
+  const res = await fetch(`${API_URL}/api/admin/payments/summary`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch payments summary: ${res.status}`);
+  return res.json();
+}
+
+export interface AdminHrEarning {
+  id: number;
+  bookingId: number;
+  paymentId: number;
+  jobSeekerName: string | null;
+  scheduledAt: string | null;
+  amountUzs: number;
+  platformFeeUzs: number;
+  netAmountUzs: number;
+  status: string;
+  createdAt: string;
+  paidOutAt: string | null;
+  payoutNote: string | null;
+}
+
+export async function getAdminHrEarnings(
+  status?: string,
+  hrExpertId?: number,
+): Promise<AdminHrEarning[]> {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (hrExpertId) params.set('hrExpertId', String(hrExpertId));
+  params.set('pageSize', '100');
+  const res = await fetch(`${API_URL}/api/admin/hr-earnings?${params.toString()}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch HR earnings: ${res.status}`);
+  return res.json();
+}
+
+export async function markEarningPaidOut(earningId: number, note?: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/admin/hr-earnings/${earningId}/mark-paid`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ note: note ?? null }),
+  });
+  if (!res.ok) throw new Error(`Failed to mark earning as paid: ${res.status}`);
+}

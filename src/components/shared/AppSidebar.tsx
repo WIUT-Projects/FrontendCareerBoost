@@ -2,7 +2,7 @@ import {
   LayoutDashboard, FileText, Palette, Brain, Users, Briefcase,
   MessageSquare, Bell, Settings, BookOpen, Calendar,
   Star, ClipboardList, BarChart3, CreditCard, UserCheck, ScrollText,
-  LogOut, ChevronUp, Sparkles, MessageSquareWarning,
+  LogOut, ChevronUp, Sparkles, MessageSquareWarning, DollarSign,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +55,7 @@ export function AppSidebar() {
     { title: t('sidebar.hrDashboard'), url: '/hr-portal', icon: LayoutDashboard },
     { title: t('sidebar.reviewQueue'), url: '/hr-portal/reviews', icon: ClipboardList },
     { title: t('sidebar.availability'), url: '/hr-portal/availability', icon: Calendar },
+    { title: t('sidebar.earnings', 'Earnings'), url: '/hr-portal/earnings', icon: DollarSign },
     { title: t('sidebar.myRatings'), url: '/hr-portal/ratings', icon: Star },
     { title: t('sidebar.myProfile'), url: '/hr-portal/profile', icon: Users },
     { title: t('sidebar.jobListings'), url: '/hr-portal/jobs', icon: Briefcase },
@@ -66,6 +67,7 @@ export function AppSidebar() {
     { title: t('sidebar.overview'),        url: '/admin',                 icon: LayoutDashboard },
     { title: t('sidebar.users'),           url: '/admin/users',           icon: Users           },
     { title: t('sidebar.templates'),       url: '/admin/templates',       icon: Palette         },
+    { title: t('sidebar.payments', 'Payments'), url: '/admin/payments',   icon: CreditCard      },
     { title: t('sidebar.complaints'),       url: '/admin/reports',         icon: MessageSquareWarning },
     { title: t('sidebar.aiUsage'),         url: '/admin/ai-usage',        icon: Brain           },
     { title: t('sidebar.hrVerification'), url: '/admin/hr-verification',  icon: UserCheck       },

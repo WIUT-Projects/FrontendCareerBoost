@@ -33,7 +33,7 @@ export { default as SubscriptionSuccessPage } from './SubscriptionSuccess';
 export { default as SubscriptionCancelPage } from './SubscriptionCancel';
 export { default as HrBookingSuccessPage } from './HrBookingSuccess';
 export { default as HrBookingCancelPage  } from './HrBookingCancel';
-export const BillingPage = () => <PlaceholderPage icon={CreditCard} title="Billing History" description="View your payment history and download receipts." />;
+export { default as BillingPage } from './BillingPage';
 export const DangerZonePage = () => <PlaceholderPage icon={Shield} title="Danger Zone" description="Delete your account or revoke OAuth permissions." />;
 
 // HR Portal pages
@@ -46,6 +46,7 @@ export const HrRatingsPage = () => <PlaceholderPage icon={Star} title="My Rating
 export { default as HrJobListingsPage } from './HrJobListings';
 export { default as HrApplicantsPage } from './HrApplicants';
 export { default as HrInterviewsPage } from './HrInterviewsPage';
+export { default as HrEarningsPage } from './HrEarningsPage';
 
 // Admin pages
 export { default as AdminDashboard } from './admin/AdminOverviewPage';
@@ -53,7 +54,7 @@ export { default as AdminUsersPage } from './admin/AdminUsersPage';
 export const AdminResumesPage = () => <PlaceholderPage icon={FileText} title="Resume Moderation" description="Review and moderate all resumes on the platform." />;
 export { default as AdminTemplatesPage } from './admin/AdminTemplatesPage';
 export { default as AdminReportsPage } from './admin/AdminReportsPage';
-export const AdminPaymentsPage = () => <PlaceholderPage icon={CreditCard} title="Payment Management" description="View all payments and issue refunds." />;
+export { default as AdminPaymentsPage } from './admin/AdminPaymentsPage';
 export { default as AdminAiUsagePage } from './admin/AdminAiUsagePage';
 export const AdminRevenuePage = () => <PlaceholderPage icon={BarChart3} title="Revenue Snapshots" description="Daily revenue charts, tables, and CSV export." />;
 export const AdminAuditLogPage = () => <PlaceholderPage icon={ScrollText} title="Audit Log" description="Full audit log of all admin actions." />;

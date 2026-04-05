@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Calendar, Clock, Video, ClipboardList, Star, ChevronRight, AlertCircle, Copy, Check,
+  Calendar, Clock, Video, ClipboardList, Star, ChevronRight, AlertCircle, Copy, Check, DollarSign,
 } from 'lucide-react';
 import { getHrBookings, type BookingItem } from '@/services/bookingService';
+import { getHrEarningsSummary } from '@/services/hrEarningsService';
+import { useQuery } from '@tanstack/react-query';
 import { resolveMediaUrl, formatLocalTime, isUpcoming } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -84,6 +86,11 @@ export default function HrPortalDashboard() {
   const [pendingCount,  setPendingCount]    = useState(0);
   const [loading,       setLoading]         = useState(true);
 
+  const earningsQuery = useQuery({
+    queryKey: ['hr-earnings-summary'],
+    queryFn: getHrEarningsSummary,
+  });
+
   useEffect(() => {
     if (!session?.access_token) return;
     setLoading(true);
@@ -110,6 +117,42 @@ export default function HrPortalDashboard() {
           <p className="text-sm text-muted-foreground mt-1">
             {t('hrDashboard.subtitle')}
           </p>
+        </div>
+
+        {/* Earnings widget */}
+        <div
+          className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border rounded-2xl p-5 cursor-pointer hover:shadow-md transition-all"
+          onClick={() => navigate('/hr-portal/earnings')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{t('hrDashboard.totalEarnings', 'Total Earnings')}</p>
+                <p className="text-2xl font-bold">
+                  {earningsQuery.isLoading
+                    ? '—'
+                    : new Intl.NumberFormat('uz-UZ').format(earningsQuery.data?.totalEarned ?? 0) + ' UZS'}
+                </p>
+              </div>
+            </div>
+            <div className="text-right text-xs text-muted-foreground space-y-0.5">
+              <div>
+                <span className="text-amber-600 font-medium">
+                  {earningsQuery.data ? new Intl.NumberFormat('uz-UZ').format(earningsQuery.data.pendingEscrow) : '—'}
+                </span>{' '}
+                pending
+              </div>
+              <div>
+                <span className="text-blue-600 font-medium">
+                  {earningsQuery.data ? new Intl.NumberFormat('uz-UZ').format(earningsQuery.data.availableBalance) : '—'}
+                </span>{' '}
+                available
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Stats row */}

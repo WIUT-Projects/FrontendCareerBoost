@@ -1,272 +1,327 @@
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Users, FileText, Brain, CreditCard, TrendingUp, TrendingDown,
+  Users, FileText, Brain, CreditCard, TrendingUp,
   ArrowUpRight, ShieldCheck, BookOpen, Briefcase, Clock,
-  Zap, Star, UserCheck, BarChart3, RefreshCw, AlertTriangle,
-  DollarSign, Repeat, UserMinus,
+  Star, UserCheck, BarChart3, RefreshCw, AlertTriangle,
+  DollarSign, Palette, Calendar,
 } from 'lucide-react';
+import { getAdminDashboardStats, AdminDashboardStats } from '@/services/adminService';
 
-// ── Sparkline data ─────────────────────────────────────────────────────────────
-const SPARKLINE = [42, 58, 35, 67, 52, 78, 61, 90, 74, 83, 69, 95, 88, 76, 102];
+function formatUzs(n: number): string {
+  return new Intl.NumberFormat('uz-UZ').format(n) + ' UZS';
+}
 
-// ── Page ───────────────────────────────────────────────────────────────────────
+function formatInt(n: number): string {
+  return n.toLocaleString();
+}
+
+function formatMonthLabel(ym: string): string {
+  // "2026-03" → "Mar 26"
+  const [y, m] = ym.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mi = Math.max(0, Math.min(11, parseInt(m, 10) - 1));
+  return `${months[mi]} ${y.slice(2)}`;
+}
+
 export default function AdminOverviewPage() {
   const { t } = useTranslation();
+
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<AdminDashboardStats>({
+    queryKey: ['admin-dashboard-stats'],
+    queryFn: getAdminDashboardStats,
+  });
+
+  const dash = (val: number | string | null | undefined) =>
+    isLoading || val == null ? '—' : String(val);
+
+  const sparkline = data?.monthlyRevenue ?? [];
+  const maxRevenue = Math.max(1, ...sparkline.map(p => Number(p.amount) || 0));
+  const latest = sparkline.at(-1);
+  const prev   = sparkline.at(-2);
+  const growth = prev && Number(prev.amount) > 0
+    ? ((Number(latest?.amount ?? 0) - Number(prev.amount)) / Number(prev.amount)) * 100
+    : 0;
+
   return (
     <div className="h-full overflow-y-auto bg-muted/30">
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
 
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{t('admin.overview.title', 'Admin Dashboard')}</h1>
+            <p className="text-sm text-muted-foreground">
+              {t('admin.overview.subtitle', 'Platform overview with live metrics.')}
+            </p>
+          </div>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs hover:bg-accent"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            {t('common.refresh', 'Refresh')}
+          </button>
+        </div>
+
+        {isError && (
+          <div className="rounded-md border border-destructive bg-destructive/10 text-destructive p-3 text-sm">
+            Failed to load dashboard stats. <button className="underline ml-2" onClick={() => refetch()}>Retry</button>
+          </div>
+        )}
+
         {/* ── Section 1: Core platform KPIs ─────────────────────────────── */}
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">{t('admin.overview.platform')}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+            {t('admin.overview.platform', 'Platform')}
+          </p>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-
             {/* Total Users */}
             <div className="rounded-2xl bg-card border p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.overview.totalUsers')}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.overview.totalUsers', 'Total Users')}</span>
                 <div className="h-8 w-8 rounded-xl bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center">
                   <Users className="h-4 w-4 text-blue-600" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold">4,821</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  <span className="text-xs font-semibold text-emerald-600">+12.4%</span>
-                  <span className="text-xs text-muted-foreground">{t('admin.overview.vsLastMonth')}</span>
+                <p className="text-3xl font-bold">{dash(data && formatInt(data.totalUsers))}</p>
+                {data && data.newUsersThisMonth > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <TrendingUp className="h-3 w-3 text-emerald-500" />
+                    <span className="text-xs font-semibold text-emerald-600">+{data.newUsersThisMonth}</span>
+                    <span className="text-xs text-muted-foreground">this month</span>
+                  </div>
+                )}
+              </div>
+              {data && (
+                <div className="flex gap-2 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-sky-400 inline-block" /> {formatInt(data.jobSeekersCount)} Jobseekers</span>
+                  <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-400 inline-block" /> {formatInt(data.hrExpertsCount)} HR</span>
+                  <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-rose-400 inline-block" /> {formatInt(data.adminsCount)} Admin</span>
                 </div>
-              </div>
-              <div className="flex gap-2 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-sky-400 inline-block" /> 4,512 Jobseekers</span>
-                <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-400 inline-block" /> 271 HR</span>
-                <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-rose-400 inline-block" /> 38 Admin</span>
-              </div>
+              )}
             </div>
 
-            {/* Resumes Created */}
+            {/* Resumes */}
             <div className="rounded-2xl bg-card border p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.overview.resumesCreated')}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.overview.resumesCreated', 'Resumes Created')}</span>
                 <div className="h-8 w-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center">
                   <FileText className="h-4 w-4 text-violet-600" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold">11,340</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  <span className="text-xs font-semibold text-emerald-600">+8.1%</span>
-                  <span className="text-xs text-muted-foreground">{t('admin.overview.vsLastMonth')}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 text-[11px] text-muted-foreground">
-                <span>{t('admin.overview.thisWeek', { n: 340 })}</span>
-                <span className="text-border">·</span>
-                <span>{t('admin.overview.avgPerUser', { n: 2.3 })}</span>
+                <p className="text-3xl font-bold">{dash(data && formatInt(data.resumesCount))}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {data ? `Avg ${(data.resumesCount / Math.max(1, data.jobSeekersCount)).toFixed(1)} per jobseeker` : ''}
+                </p>
               </div>
             </div>
 
-            {/* AI Tokens */}
+            {/* AI Usage */}
             <div className="rounded-2xl bg-card border p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.overview.aiTokensUsed')}</span>
+                <span className="text-xs font-medium text-muted-foreground">AI Analyses</span>
                 <div className="h-8 w-8 rounded-xl bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center">
                   <Brain className="h-4 w-4 text-amber-600" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold">2.3M</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  <span className="text-xs font-semibold text-emerald-600">+21.7%</span>
-                  <span className="text-xs text-muted-foreground">{t('admin.overview.thisMonth')}</span>
-                </div>
-              </div>
-              {/* Token quota bar */}
-              <div>
-                <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
-                  <span>{t('admin.overview.monthlyQuota')}</span>
-                  <span className="font-medium text-amber-600">{t('admin.overview.used', { pct: 80 })}</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-amber-400" style={{ width: '80%' }} />
-                </div>
+                <p className="text-3xl font-bold">{dash(data && formatInt(data.totalAiAnalyses))}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {data ? `$${data.aiTotalCostUsd.toFixed(2)} total cost` : ''}
+                </p>
               </div>
             </div>
 
             {/* Revenue */}
             <div className="rounded-2xl bg-card border p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.overview.totalRevenue')}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.overview.totalRevenue', 'Total Revenue')}</span>
                 <div className="h-8 w-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center">
                   <CreditCard className="h-4 w-4 text-emerald-600" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold">$8,450</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingDown className="h-3 w-3 text-rose-500" />
-                  <span className="text-xs font-semibold text-rose-600">-3.2%</span>
-                  <span className="text-xs text-muted-foreground">{t('admin.overview.vsLastMonth')}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 text-[11px] text-muted-foreground">
-                <span>$6,120 subscriptions</span>
-                <span className="text-border">·</span>
-                <span>$2,330 HR</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* ── Section 2: Paid features ───────────────────────────────────── */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">{t('admin.overview.paidFeatures')}</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-
-            <div className="rounded-2xl bg-card border px-4 py-4 flex flex-col gap-1">
-              <div className="flex items-center justify-between mb-2">
-                <DollarSign className="h-4 w-4 text-emerald-500" />
-                <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-full">MRR</span>
-              </div>
-              <p className="text-2xl font-bold">$6,120</p>
-              <p className="text-[11px] text-muted-foreground">{t('admin.overview.mrr')}</p>
-            </div>
-
-            <div className="rounded-2xl bg-card border px-4 py-4 flex flex-col gap-1">
-              <div className="flex items-center justify-between mb-2">
-                <Repeat className="h-4 w-4 text-blue-500" />
-                <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded-full">+18</span>
-              </div>
-              <p className="text-2xl font-bold">347</p>
-              <p className="text-[11px] text-muted-foreground">{t('admin.overview.activeSubscriptions')}</p>
-            </div>
-
-            <div className="rounded-2xl bg-card border px-4 py-4 flex flex-col gap-1">
-              <div className="flex items-center justify-between mb-2">
-                <UserMinus className="h-4 w-4 text-rose-500" />
-                <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded-full">↑ 0.3%</span>
-              </div>
-              <p className="text-2xl font-bold">2.1%</p>
-              <p className="text-[11px] text-muted-foreground">{t('admin.overview.churnRate')}</p>
-            </div>
-
-            <div className="rounded-2xl bg-card border px-4 py-4 flex flex-col gap-1">
-              <div className="flex items-center justify-between mb-2">
-                <Star className="h-4 w-4 text-amber-500" />
-                <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-full">+7</span>
-              </div>
-              <p className="text-2xl font-bold">84</p>
-              <p className="text-[11px] text-muted-foreground">{t('admin.overview.hrSessionsBooked')}</p>
-            </div>
-
-            <div className="rounded-2xl bg-card border px-4 py-4 flex flex-col gap-1">
-              <div className="flex items-center justify-between mb-2">
-                <Zap className="h-4 w-4 text-violet-500" />
-                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 dark:bg-violet-950/40 px-1.5 py-0.5 rounded-full">+43</span>
-              </div>
-              <p className="text-2xl font-bold">612</p>
-              <p className="text-[11px] text-muted-foreground">{t('admin.overview.aiCreditsPurchased')}</p>
-            </div>
-
-            <div className="rounded-2xl bg-card border px-4 py-4 flex flex-col gap-1">
-              <div className="flex items-center justify-between mb-2">
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
-                <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.5 rounded-full">open</span>
-              </div>
-              <p className="text-2xl font-bold">5</p>
-              <p className="text-[11px] text-muted-foreground">{t('admin.overview.refundRequests')}</p>
-            </div>
-
-          </div>
-        </div>
-
-        {/* ── Section 3: Content & Platform health ──────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-
-          {/* Platform health tiles */}
-          <div className="lg:col-span-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">{t('admin.overview.contentPlatform')}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3">
-              {[
-                { labelKey: 'admin.overview.activeHrExperts',  value: '38',  icon: ShieldCheck,   color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-950/60' },
-                { labelKey: 'admin.overview.publishedArticles', value: '127', icon: BookOpen,      color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-950/60' },
-                { labelKey: 'admin.overview.openJobListings',   value: '214', icon: Briefcase,     color: 'text-sky-500',    bg: 'bg-sky-100 dark:bg-sky-950/60' },
-                { labelKey: 'admin.overview.pendingHrReviews',  value: '19',  icon: Clock,         color: 'text-amber-500',  bg: 'bg-amber-100 dark:bg-amber-950/60' },
-                { labelKey: 'admin.overview.hrVerifPending',    value: '6',   icon: UserCheck,     color: 'text-rose-500',   bg: 'bg-rose-100 dark:bg-rose-950/60' },
-                { labelKey: 'admin.overview.openComplaints',    value: '3',   icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-950/60' },
-                { labelKey: 'admin.overview.avgResumeScore',    value: '71%', icon: BarChart3,     color: 'text-teal-500',   bg: 'bg-teal-100 dark:bg-teal-950/60' },
-                { labelKey: 'admin.overview.avgHrRating',       value: '4.7', icon: Star,          color: 'text-amber-500',  bg: 'bg-amber-100 dark:bg-amber-950/60' },
-              ].map((s) => {
-                const Icon = s.icon;
-                return (
-                  <div key={s.labelKey} className="rounded-2xl bg-card border px-4 py-3.5 flex items-center gap-3">
-                    <div className={`h-9 w-9 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
-                      <Icon className={`h-4 w-4 ${s.color}`} />
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold leading-none">{s.value}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{t(s.labelKey)}</p>
-                    </div>
+                <p className="text-3xl font-bold">{dash(data && formatUzs(data.totalRevenue))}</p>
+                {data && (
+                  <div className="flex gap-2 text-[11px] text-muted-foreground mt-1">
+                    <span>{formatUzs(data.subscriptionRevenue)} subs</span>
+                    <span className="text-border">·</span>
+                    <span>{formatUzs(data.bookingGrossRevenue)} HR</span>
                   </div>
-                );
-              })}
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Section 2: Financial ─────────────────────────────── */}
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Financial</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+            <MiniStat
+              icon={<DollarSign className="h-4 w-4 text-emerald-500" />}
+              value={data ? formatUzs(data.totalRevenue) : '—'}
+              label="Total revenue"
+            />
+            <MiniStat
+              icon={<Clock className="h-4 w-4 text-orange-500" />}
+              value={data ? formatUzs(data.escrowedBalance) : '—'}
+              label="Escrowed"
+            />
+            <MiniStat
+              icon={<ShieldCheck className="h-4 w-4 text-violet-500" />}
+              value={data ? formatUzs(data.platformFeeEarned) : '—'}
+              label="Platform fee earned"
+            />
+            <MiniStat
+              icon={<Users className="h-4 w-4 text-blue-500" />}
+              value={data ? formatUzs(data.pendingPayouts) : '—'}
+              label="Pending HR payouts"
+            />
+            <MiniStat
+              icon={<Calendar className="h-4 w-4 text-amber-500" />}
+              value={data ? formatInt(data.bookingsTotal) : '—'}
+              label="HR sessions booked"
+              badge={data ? `${data.bookingsPending} pending` : undefined}
+            />
+            <MiniStat
+              icon={<AlertTriangle className="h-4 w-4 text-rose-500" />}
+              value={data ? formatInt(data.openRefundRequests) : '—'}
+              label="Open refund requests"
+              badge={data && data.openRefundRequests > 0 ? 'action needed' : undefined}
+              badgeColor="rose"
+            />
+          </div>
+        </div>
+
+        {/* ── Section 3: Content & Revenue chart ──────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* Platform tiles */}
+          <div className="lg:col-span-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Content & Health</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3">
+              <Tile icon={ShieldCheck} value={data ? formatInt(data.hrExpertsCount) : '—'} label="HR experts" color="violet" />
+              <Tile icon={BookOpen}    value={data ? formatInt(data.articlesCount) : '—'}  label="Articles"   color="indigo" />
+              <Tile icon={Briefcase}   value={data ? formatInt(data.jobPostingsCount) : '—'} label="Job listings" color="sky" />
+              <Tile icon={Palette}     value={data ? formatInt(data.templatesCount) : '—'} label="Templates" color="teal" />
+              <Tile icon={Calendar}    value={data ? formatInt(data.bookingsApproved) : '—'} label="Approved bookings" color="emerald" />
+              <Tile icon={UserCheck}   value={data ? formatInt(data.bookingsCompleted) : '—'} label="Completed sessions" color="blue" />
+              <Tile icon={BarChart3}   value={data ? formatInt(data.totalRatings) : '—'} label="Total ratings" color="amber" />
+              <Tile
+                icon={Star}
+                value={data && data.avgHrRating != null ? data.avgHrRating.toFixed(1) : '—'}
+                label="Avg HR rating"
+                color="orange"
+              />
             </div>
           </div>
 
-          {/* Revenue sparkline */}
+          {/* Revenue trend (last 6 months) */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">{t('admin.overview.revenueTrend')}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Revenue (last 6 months)</p>
             <div className="rounded-2xl bg-card border px-5 py-5 flex flex-col gap-4 h-[calc(100%-28px)]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">{t('admin.overview.dailyRevenue')}</p>
-                  <p className="text-2xl font-bold mt-0.5">$102 <span className="text-sm font-normal text-muted-foreground">{t('admin.overview.today')}</span></p>
+                  <p className="text-xs text-muted-foreground">Latest month</p>
+                  <p className="text-xl font-bold mt-0.5">{latest ? formatUzs(Number(latest.amount)) : '—'}</p>
                 </div>
-                <div className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                  +34%
-                </div>
+                {prev && Number(prev.amount) > 0 && (
+                  <div className={`flex items-center gap-1 text-xs font-medium ${growth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <ArrowUpRight className={`h-3.5 w-3.5 ${growth < 0 ? 'rotate-180' : ''}`} />
+                    {growth.toFixed(1)}%
+                  </div>
+                )}
               </div>
-              {/* Sparkline bars */}
-              <div className="flex items-end gap-1 flex-1 min-h-[80px]">
-                {SPARKLINE.map((v, i) => {
-                  const maxV = Math.max(...SPARKLINE);
-                  const h = Math.round((v / maxV) * 100);
-                  const isLast = i === SPARKLINE.length - 1;
-                  const isHigh = v >= 88;
-                  return (
-                    <div key={i} className="flex-1 flex flex-col justify-end h-full">
-                      <div
-                        className="rounded-sm w-full transition-all"
-                        style={{
-                          height: `${h}%`,
-                          background: isLast
-                            ? 'hsl(var(--primary))'
-                            : isHigh
-                            ? 'hsl(var(--primary) / 0.45)'
-                            : 'hsl(var(--primary) / 0.18)',
-                        }}
-                      />
-                    </div>
-                  );
-                })}
+              {/* Bars */}
+              <div className="flex items-end gap-2 flex-1 min-h-[80px]">
+                {sparkline.length === 0
+                  ? <div className="flex-1 text-xs text-muted-foreground text-center self-center">No revenue yet</div>
+                  : sparkline.map((p, i) => {
+                    const h = Math.round((Number(p.amount) / maxRevenue) * 100);
+                    const isLast = i === sparkline.length - 1;
+                    return (
+                      <div key={p.month} className="flex-1 flex flex-col justify-end h-full">
+                        <div
+                          className="rounded-sm w-full transition-all"
+                          style={{
+                            height: `${Math.max(2, h)}%`,
+                            background: isLast ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.35)',
+                          }}
+                          title={`${formatMonthLabel(p.month)}: ${formatUzs(Number(p.amount))}`}
+                        />
+                      </div>
+                    );
+                  })}
               </div>
               <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Mar 8</span>
-                <div className="flex items-center gap-1">
-                  <RefreshCw className="h-2.5 w-2.5" />
-                  <span>{t('admin.overview.staticDemo')}</span>
-                </div>
-                <span>Mar 22</span>
+                <span>{sparkline[0] ? formatMonthLabel(sparkline[0].month) : ''}</span>
+                <span>{latest ? formatMonthLabel(latest.month) : ''}</span>
               </div>
             </div>
           </div>
-
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+// ── Subcomponents ─────────────────────────────────────────────────────────────
+
+function MiniStat({
+  icon, value, label, badge, badgeColor,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+  badge?: string;
+  badgeColor?: 'rose' | 'emerald';
+}) {
+  const badgeClass = badgeColor === 'rose'
+    ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/40'
+    : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40';
+  return (
+    <div className="rounded-2xl bg-card border px-4 py-4 flex flex-col gap-1">
+      <div className="flex items-center justify-between mb-2">
+        {icon}
+        {badge && (
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${badgeClass}`}>
+            {badge}
+          </span>
+        )}
+      </div>
+      <p className="text-xl font-bold truncate">{value}</p>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function Tile({
+  icon: Icon, value, label, color,
+}: { icon: any; value: string; label: string; color: string }) {
+  const colorMap: Record<string, { bg: string; text: string }> = {
+    violet:  { bg: 'bg-violet-100 dark:bg-violet-950/60',   text: 'text-violet-600'   },
+    indigo:  { bg: 'bg-indigo-100 dark:bg-indigo-950/60',   text: 'text-indigo-600'   },
+    sky:     { bg: 'bg-sky-100 dark:bg-sky-950/60',         text: 'text-sky-600'      },
+    teal:    { bg: 'bg-teal-100 dark:bg-teal-950/60',       text: 'text-teal-600'     },
+    emerald: { bg: 'bg-emerald-100 dark:bg-emerald-950/60', text: 'text-emerald-600'  },
+    blue:    { bg: 'bg-blue-100 dark:bg-blue-950/60',       text: 'text-blue-600'     },
+    amber:   { bg: 'bg-amber-100 dark:bg-amber-950/60',     text: 'text-amber-600'    },
+    orange:  { bg: 'bg-orange-100 dark:bg-orange-950/60',   text: 'text-orange-600'   },
+  };
+  const c = colorMap[color] || colorMap.blue;
+  return (
+    <div className="rounded-2xl bg-card border px-4 py-3.5 flex items-center gap-3">
+      <div className={`h-9 w-9 rounded-xl ${c.bg} flex items-center justify-center flex-shrink-0`}>
+        <Icon className={`h-4 w-4 ${c.text}`} />
+      </div>
+      <div>
+        <p className="text-xl font-bold leading-none">{value}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
       </div>
     </div>
   );

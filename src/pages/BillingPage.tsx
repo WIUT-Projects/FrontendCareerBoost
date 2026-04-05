@@ -1,9 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { CreditCard, FileText, Calendar, Palette, Wallet, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CreditCard, FileText, Calendar, Palette, Wallet, RefreshCw, Undo2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -11,11 +13,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import {
   getMyBillingSummary, getMyBillingHistory, PaymentListItemDto,
 } from '@/services/billingService';
+import { createRefundRequest } from '@/services/refundService';
 
 function formatUzs(n: number): string {
   return new Intl.NumberFormat('uz-UZ').format(n) + ' UZS';
@@ -49,8 +52,13 @@ function describe(p: PaymentListItemDto): string {
 }
 
 export default function BillingPage() {
+  const qc = useQueryClient();
   const [purpose, setPurpose] = useState<string>('all');
   const [selected, setSelected] = useState<PaymentListItemDto | null>(null);
+
+  // Refund dialog state
+  const [refundTarget, setRefundTarget] = useState<PaymentListItemDto | null>(null);
+  const [refundReason, setRefundReason] = useState('');
 
   const summaryQuery = useQuery({
     queryKey: ['my-billing-summary'],
@@ -63,6 +71,23 @@ export default function BillingPage() {
       purpose: purpose === 'all' ? undefined : purpose,
       pageSize: 100,
     }),
+  });
+
+  const refundMutation = useMutation({
+    mutationFn: async () => {
+      if (!refundTarget || !refundTarget.bookingId) throw new Error('No booking selected');
+      return createRefundRequest(refundTarget.bookingId, refundReason);
+    },
+    onSuccess: () => {
+      toast.success('Refund request submitted. Admin will review it.');
+      setRefundTarget(null);
+      setRefundReason('');
+      qc.invalidateQueries({ queryKey: ['my-billing-history'] });
+      qc.invalidateQueries({ queryKey: ['my-billing-summary'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to submit refund request');
+    },
   });
 
   const items = historyQuery.data?.items ?? [];
@@ -78,7 +103,7 @@ export default function BillingPage() {
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <SummaryCard
             icon={<Wallet className="h-4 w-4 text-blue-600" />}
             label="Total Spent"
@@ -102,6 +127,12 @@ export default function BillingPage() {
             icon={<Calendar className="h-4 w-4 text-orange-600" />}
             label="HR Sessions"
             value={summaryQuery.data?.bookingsTotal ?? 0}
+            loading={summaryQuery.isLoading}
+          />
+          <SummaryCard
+            icon={<Undo2 className="h-4 w-4 text-rose-600" />}
+            label="Refunded"
+            value={summaryQuery.data?.refundedTotal ?? 0}
             loading={summaryQuery.isLoading}
           />
         </div>
@@ -147,6 +178,7 @@ export default function BillingPage() {
                     <TableHead>Type</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -160,7 +192,35 @@ export default function BillingPage() {
                       <TableCell className="font-medium">{describe(p)}</TableCell>
                       <TableCell><Badge variant="outline">{p.purpose}</Badge></TableCell>
                       <TableCell className="text-right font-semibold">{formatUzs(p.amountUzs)}</TableCell>
-                      <TableCell><Badge variant={statusVariant(p.status)}>{p.status}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={statusVariant(p.status)}>{p.status}</Badge>
+                          {p.activeRefundStatus && (
+                            <Badge
+                              variant={p.activeRefundStatus === 'Approved' ? 'destructive' : 'outline'}
+                              className="text-[10px]"
+                            >
+                              Refund: {p.activeRefundStatus}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {p.canRequestRefund && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRefundTarget(p);
+                              setRefundReason('');
+                            }}
+                          >
+                            <Undo2 className="h-3 w-3 mr-1" />
+                            Refund
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -190,11 +250,55 @@ export default function BillingPage() {
                   <Row label="Session date" value={formatDate(selected.scheduledAt)} />
                 </>
               )}
+              {selected.refundedAt && (
+                <Row label="Refunded at" value={formatDate(selected.refundedAt)} />
+              )}
+              {selected.activeRefundStatus && (
+                <Row label="Refund status" value={selected.activeRefundStatus} />
+              )}
               {selected.stripeSessionId && (
                 <Row label="Stripe session" value={selected.stripeSessionId} mono />
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund request dialog */}
+      <Dialog open={!!refundTarget} onOpenChange={(open) => !open && setRefundTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Refund</DialogTitle>
+            <DialogDescription>
+              Please explain why you're requesting a refund. Admin will review your request within 1-2 business days.
+            </DialogDescription>
+          </DialogHeader>
+          {refundTarget && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md bg-muted p-3 space-y-1">
+                <div className="font-medium">{describe(refundTarget)}</div>
+                <div className="text-muted-foreground">Amount: {formatUzs(refundTarget.amountUzs)}</div>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Reason *</label>
+                <Textarea
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="e.g. HR expert didn't show up, session quality was poor, etc."
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRefundTarget(null)}>Cancel</Button>
+            <Button
+              onClick={() => refundMutation.mutate()}
+              disabled={refundReason.trim().length < 5 || refundMutation.isPending}
+            >
+              {refundMutation.isPending ? 'Submitting…' : 'Submit Request'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -156,12 +156,31 @@ export interface ModelStats {
   costUsd: number;
 }
 
+export interface AiTopUser {
+  userId: number;
+  fullName: string | null;
+  email: string | null;
+  count: number;
+  tokens: number;
+  costUsd: number;
+}
+
+export interface AiDailyUsagePoint {
+  date: string;
+  count: number;
+  tokens: number;
+  costUsd: number;
+}
+
 export interface AdminAiUsageStats {
   totalAnalyses: number;
   totalTokensInput: number;
   totalTokensOutput: number;
   totalCostUsd: number;
   byModel: Record<string, ModelStats>;
+  topUsers: AiTopUser[];
+  dailyUsage: AiDailyUsagePoint[];
+  suggestions: string[];
 }
 
 export async function getAiUsageStats(token: string): Promise<AdminAiUsageStats> {
@@ -169,6 +188,62 @@ export async function getAiUsageStats(token: string): Promise<AdminAiUsageStats>
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Failed to fetch AI usage stats');
+  return res.json();
+}
+
+// ── Admin Dashboard Stats ─────────────────────────────────────────────────────
+
+export interface MonthlyRevenuePoint {
+  month: string; // "YYYY-MM"
+  amount: number;
+}
+
+export interface AdminDashboardStats {
+  // Users
+  totalUsers: number;
+  jobSeekersCount: number;
+  hrExpertsCount: number;
+  adminsCount: number;
+  newUsersThisMonth: number;
+
+  // Content
+  resumesCount: number;
+  jobPostingsCount: number;
+  articlesCount: number;
+  templatesCount: number;
+
+  // Bookings
+  bookingsTotal: number;
+  bookingsApproved: number;
+  bookingsPending: number;
+  bookingsCompleted: number;
+
+  // Revenue
+  totalRevenue: number;
+  subscriptionRevenue: number;
+  bookingGrossRevenue: number;
+  escrowedBalance: number;
+  platformFeeEarned: number;
+  pendingPayouts: number;
+
+  // AI
+  totalAiAnalyses: number;
+  aiTotalCostUsd: number;
+
+  // Refunds
+  openRefundRequests: number;
+
+  // Ratings
+  avgHrRating: number | null;
+  totalRatings: number;
+
+  // Chart
+  monthlyRevenue: MonthlyRevenuePoint[];
+}
+
+export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+  const res = await fetch(`${API_URL}/api/admin/dashboard/stats`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch dashboard stats: ${res.status}`);
   return res.json();
 }
 

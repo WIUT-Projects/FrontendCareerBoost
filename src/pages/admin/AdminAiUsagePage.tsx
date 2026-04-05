@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Brain, Loader2, TrendingUp, Zap, DollarSign } from 'lucide-react';
+import { Brain, Loader2, TrendingUp, Zap, DollarSign, Lightbulb, Users } from 'lucide-react';
 import { getAiUsageStats, type AdminAiUsageStats, type ModelStats } from '@/services/adminService';
 import { loadSession } from '@/services/authService';
 
@@ -114,6 +114,24 @@ export default function AdminAiUsagePage() {
             </div>
           </div>
 
+          {/* Smart Suggestions */}
+          {stats.suggestions && stats.suggestions.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Lightbulb className="h-4 w-4" />
+                Suggestions
+              </h2>
+              <div className="rounded-lg border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900 p-4 space-y-2">
+                {stats.suggestions.map((s, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <Lightbulb className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <span>{s}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Model Breakdown */}
           {Object.keys(stats.byModel).length > 0 && (
             <div className="space-y-3">
@@ -122,6 +140,68 @@ export default function AdminAiUsagePage() {
                 {Object.entries(stats.byModel).map(([model, modelStats]) => (
                   <ModelCard key={model} model={model} stats={modelStats} />
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Users */}
+          {stats.topUsers && stats.topUsers.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Top Users by AI Cost
+              </h2>
+              <div className="rounded-lg border bg-card overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left px-4 py-2 font-medium">User</th>
+                      <th className="text-right px-4 py-2 font-medium">Analyses</th>
+                      <th className="text-right px-4 py-2 font-medium">Tokens</th>
+                      <th className="text-right px-4 py-2 font-medium">Cost (USD)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.topUsers.map((u) => (
+                      <tr key={u.userId} className="border-t">
+                        <td className="px-4 py-2">
+                          <div className="font-medium">{u.fullName || '—'}</div>
+                          <div className="text-xs text-muted-foreground">{u.email}</div>
+                        </td>
+                        <td className="px-4 py-2 text-right">{u.count.toLocaleString()}</td>
+                        <td className="px-4 py-2 text-right">{(u.tokens / 1000).toFixed(1)}K</td>
+                        <td className="px-4 py-2 text-right font-semibold">${u.costUsd.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Daily Usage Chart */}
+          {stats.dailyUsage && stats.dailyUsage.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Daily Usage (last 30 days)</h2>
+              <div className="rounded-lg border bg-card p-4">
+                <div className="flex items-end gap-1 h-32">
+                  {stats.dailyUsage.map((d) => {
+                    const max = Math.max(...stats.dailyUsage.map(x => x.tokens));
+                    const h = max > 0 ? (d.tokens / max) * 100 : 0;
+                    return (
+                      <div
+                        key={d.date}
+                        className="flex-1 bg-primary/70 rounded-sm hover:bg-primary transition-colors"
+                        style={{ height: `${Math.max(2, h)}%` }}
+                        title={`${d.date}: ${d.count} calls, ${(d.tokens / 1000).toFixed(1)}K tokens, $${d.costUsd.toFixed(4)}`}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
+                  <span>{stats.dailyUsage[0]?.date}</span>
+                  <span>{stats.dailyUsage.at(-1)?.date}</span>
+                </div>
               </div>
             </div>
           )}

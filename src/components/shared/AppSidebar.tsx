@@ -2,7 +2,7 @@ import {
   LayoutDashboard, FileText, Palette, Brain, Users, Briefcase,
   MessageSquare, Bell, Settings, BookOpen, Calendar,
   Star, ClipboardList, BarChart3, CreditCard, UserCheck, ScrollText,
-  LogOut, ChevronUp, Sparkles, MessageSquareWarning, DollarSign,
+  LogOut, ChevronUp, Sparkles, MessageSquareWarning, DollarSign, Undo2,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,6 +68,7 @@ export function AppSidebar() {
     { title: t('sidebar.users'),           url: '/admin/users',           icon: Users           },
     { title: t('sidebar.templates'),       url: '/admin/templates',       icon: Palette         },
     { title: t('sidebar.payments', 'Payments'), url: '/admin/payments',   icon: CreditCard      },
+    { title: t('sidebar.refunds', 'Refunds'),   url: '/admin/refunds',    icon: Undo2           },
     { title: t('sidebar.complaints'),       url: '/admin/reports',         icon: MessageSquareWarning },
     { title: t('sidebar.aiUsage'),         url: '/admin/ai-usage',        icon: Brain           },
     { title: t('sidebar.hrVerification'), url: '/admin/hr-verification',  icon: UserCheck       },

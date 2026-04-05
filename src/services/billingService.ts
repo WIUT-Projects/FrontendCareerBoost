@@ -31,6 +31,10 @@ export interface PaymentListItemDto {
   createdAt: string;
   paidAt: string | null;
   releasedAt: string | null;
+  refundedAt: string | null;
+  canRequestRefund: boolean;
+  activeRefundStatus: 'Pending' | 'Approved' | 'Rejected' | null;
+  activeRefundId: number | null;
 }
 
 export interface PaymentListResponse {
@@ -45,6 +49,7 @@ export interface MyBillingSummaryDto {
   subscriptionsTotal: number;
   templatesTotal: number;
   bookingsTotal: number;
+  refundedTotal: number;
   paymentsCount: number;
 }
 

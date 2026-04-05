@@ -30,7 +30,7 @@ import {
   HrEarningsPage,
   AdminDashboard, AdminUsersPage, AdminResumesPage, AdminTemplatesPage,
   AdminReportsPage, AdminPaymentsPage, AdminAiUsagePage, AdminRevenuePage,
-  AdminAuditLogPage, AdminHrVerificationPage,
+  AdminRefundsPage, AdminAuditLogPage, AdminHrVerificationPage,
   AdminBlogPage, AdminBlogNewPage, AdminBlogEditPage,
   ForbiddenPage,
 } from "./pages/AllPages";
@@ -129,6 +129,7 @@ const App = () => (
                   <Route path="/admin/resumes" element={<AdminResumesPage />} />
                   <Route path="/admin/templates" element={<AdminTemplatesPage />} />
                   <Route path="/admin/payments" element={<AdminPaymentsPage />} />
+                  <Route path="/admin/refunds" element={<AdminRefundsPage />} />
                   <Route path="/admin/ai-usage" element={<AdminAiUsagePage />} />
                   <Route path="/admin/revenue" element={<AdminRevenuePage />} />
                   <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />

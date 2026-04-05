@@ -56,6 +56,7 @@ export { default as AdminTemplatesPage } from './admin/AdminTemplatesPage';
 export { default as AdminReportsPage } from './admin/AdminReportsPage';
 export { default as AdminPaymentsPage } from './admin/AdminPaymentsPage';
 export { default as AdminAiUsagePage } from './admin/AdminAiUsagePage';
+export { default as AdminRefundsPage } from './admin/AdminRefundsPage';
 export const AdminRevenuePage = () => <PlaceholderPage icon={BarChart3} title="Revenue Snapshots" description="Daily revenue charts, tables, and CSV export." />;
 export const AdminAuditLogPage = () => <PlaceholderPage icon={ScrollText} title="Audit Log" description="Full audit log of all admin actions." />;
 export { default as AdminHrVerificationPage } from './admin/AdminHrVerificationPage';

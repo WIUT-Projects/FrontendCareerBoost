@@ -211,7 +211,7 @@ export default function LoginPage() {
               T
             </div>
             <div>
-              <p className="text-white text-xs font-semibold">Timur S.</p>
+              <p className="text-white text-xs font-semibold">Nozimjon U.</p>
               <p className="text-slate-500 text-[11px]">Frontend Developer</p>
             </div>
             <div className="ml-auto flex gap-0.5">

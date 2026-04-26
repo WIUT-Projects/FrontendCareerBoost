@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, Brain, Users, Briefcase, ArrowRight, CheckCircle, Star, LogOut } from 'lucide-react';
+import { FileText, Brain, Users, Briefcase, ArrowRight, CheckCircle, Star, LogOut, HelpCircle } from 'lucide-react';
 import { PricingSection } from './Subscription';
 import { useTranslation } from 'react-i18next';
 import { TiltCard } from '@/components/shared/TiltCard';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import heroImage from '@/assets/hero-illustration.png';
@@ -47,6 +48,7 @@ export default function LandingPage() {
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('nav.features')}</a>
             <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
             <a href="#stats" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('nav.about')}</a>
+            <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('nav.faq')}</a>
             <Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('nav.blog')}</Link>
           </div>
           <div className="flex items-center gap-2">
@@ -144,6 +146,54 @@ export default function LandingPage() {
           <p className="text-muted-foreground max-w-md mx-auto">Choose the plan that fits your career goals.</p>
         </div>
         <PricingSection embedded />
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="container py-20 relative">
+        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-primary/10 blur-[120px]" />
+          <div className="absolute bottom-0 -right-20 w-[350px] h-[350px] rounded-full bg-[hsl(220,76%,70%)]/10 blur-[120px]" />
+        </div>
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm text-accent-foreground mb-4">
+            <HelpCircle className="h-3.5 w-3.5" /> FAQ
+          </div>
+          <h3 className="font-display text-3xl lg:text-4xl font-bold mb-3">
+            {t('faq.title')} <span className="text-gradient-primary">{t('faq.titleHighlight')}</span>
+          </h3>
+          <p className="text-muted-foreground max-w-lg mx-auto">{t('faq.subtitle')}</p>
+        </div>
+
+        <Accordion type="single" collapsible className="max-w-3xl mx-auto space-y-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <AccordionItem
+              key={i}
+              value={`faq-${i}`}
+              className="rounded-xl border bg-card px-5 data-[state=open]:shadow-md data-[state=open]:border-primary/40 transition-all"
+            >
+              <AccordionTrigger className="font-display font-medium text-left hover:no-underline py-5">
+                <span className="flex items-center gap-3 pr-4">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent">
+                    <HelpCircle className="h-4 w-4 text-primary" />
+                  </span>
+                  <span>{t(`faq.items.q${i}.question`)}</span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground leading-relaxed pl-11 pb-5">
+                {t(`faq.items.q${i}.answer`)}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+
+        <div className="text-center mt-10">
+          <p className="text-sm text-muted-foreground mb-3">{t('faq.stillHaveQuestions')}</p>
+          <Link to="/blog">
+            <Button variant="outline" size="sm">
+              {t('faq.contactUs')} <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
       </section>
 
       {/* CTA */}

@@ -3,6 +3,7 @@
     "features": "Imkoniyatlar",
     "about": "Biz haqimizda",
     "blog": "Blog",
+    "faq": "Savollar",
     "signIn": "Kirish",
     "getStarted": "Boshlash"
   },
@@ -33,6 +34,39 @@
     "hrReviewsDesc": "Shaxsiy fikr-mulohaza uchun tasdiqlangan HR mutaxassislari bilan 1:1 sessiyalar.",
     "jobMarket": "Ish bozori",
     "jobMarketDesc": "E'lonlarni ko'ring, to'g'ridan-to'g'ri ariza bering va arizalaringizni kuzating."
+  },
+  "faq": {
+    "title": "Tez-tez beriladigan",
+    "titleHighlight": "savollar",
+    "subtitle": "CareerBoost Pro'dan foydalanishni boshlashdan oldin bilishingiz kerak bo'lgan barcha narsa.",
+    "items": {
+      "q1": {
+        "question": "CareerBoost Pro nima va u qanday ishlaydi?",
+        "answer": "CareerBoost Pro — bu professional rezyume yaratish, AI yordamida tahlil olish, tasdiqlangan HR mutaxassislar bilan suhbat qurish va ish o'rinlariga ariza yuborish imkonini beradigan yagona platforma. Ro'yxatdan o'ting, shablon tanlang — bir necha daqiqa ichida ishni boshlashingiz mumkin."
+      },
+      "q2": {
+        "question": "Platformadan bepul foydalanish mumkinmi?",
+        "answer": "Ha. Bepul tarif bazaviy shablonlar bilan rezyume yaratish, oyiga cheklangan miqdorda AI tahlil va ish bozoriga to'liq kirishni o'z ichiga oladi. Faqat premium shablonlar, cheksiz AI tahlil yoki HR mutaxassis sessiyalari kerak bo'lganda to'lov amalga oshiriladi."
+      },
+      "q3": {
+        "question": "AI rezyume tahlili qanchalik aniq?",
+        "answer": "AI rezyumengizni real ATS mezonlari — tuzilma, grammatika, ta'sir kuchi, kalit so'zlar mosligi va o'qishga qulayligi bo'yicha baholaydi. Har bir tahlilda 0–100 ball, aniq tavsiyalar va o'rganish kerak bo'lgan ko'nikmalar ro'yxati beriladi. Foydalanuvchi statistikasiga ko'ra, tavsiyalarni qo'llaganidan keyin o'rtacha ball 25+ ga oshadi."
+      },
+      "q4": {
+        "question": "HR mutaxassislari haqiqatan tasdiqlanganmi?",
+        "answer": "Ha. Har bir HR mutaxassis \"Tasdiqlangan\" belgisini olishdan oldin admin tomonidan qo'lda tekshiriladi: tajriba, ixtisoslik va shaxsiyati tasdiqlanadi. Sessiya buyurtma qilganda siz faqat yashil belgili tasdiqlangan mutaxassislarni ko'rasiz."
+      },
+      "q5": {
+        "question": "Rezyumeni qaysi formatlarda yuklab olsam bo'ladi?",
+        "answer": "Bepul foydalanuvchilar PDF formatida (suv belgilarsiz) yuklab olishlari mumkin. Pro va Business foydalanuvchilari qo'shimcha ravishda Word (.doc) formati, premium shablonlar va cheksiz miqdorda yuklab olish imkoniyatiga ega."
+      },
+      "q6": {
+        "question": "Obunani bekor qilsam pulim qaytadimi?",
+        "answer": "Sozlamalar bo'limidan istalgan vaqtda obunani bekor qilishingiz mumkin — to'lov davri tugaguniga qadar foydalanishni davom ettirasiz. Barcha pullik tariflar uchun 7 kunlik pulni qaytarish kafolati amal qiladi. Yordam xizmatiga murojaat qiling — biz qaytarib beramiz."
+      }
+    },
+    "stillHaveQuestions": "Boshqa savollaringiz bormi?",
+    "contactUs": "Blogni o'qing yoki biz bilan bog'laning"
   },
   "cta": {
     "title": "Karyerangizni tezlashtirishga tayyormisiz?",

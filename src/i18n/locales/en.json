@@ -3,6 +3,7 @@
     "features": "Features",
     "about": "About",
     "blog": "Blog",
+    "faq": "FAQ",
     "signIn": "Sign In",
     "getStarted": "Get Started"
   },
@@ -33,6 +34,39 @@
     "hrReviewsDesc": "Book 1-on-1 sessions with verified HR professionals for personalized feedback.",
     "jobMarket": "Job Marketplace",
     "jobMarketDesc": "Browse listings, apply directly, and track your applications in one place."
+  },
+  "faq": {
+    "title": "Frequently Asked",
+    "titleHighlight": "Questions",
+    "subtitle": "Everything you need to know before getting started with CareerBoost Pro.",
+    "items": {
+      "q1": {
+        "question": "What is CareerBoost Pro and how does it work?",
+        "answer": "CareerBoost Pro is an all-in-one career platform that helps you build professional resumes, receive AI-powered feedback, book sessions with verified HR experts, and apply to jobs — all from a single dashboard. Sign up, choose a template, and you're ready to go in minutes."
+      },
+      "q2": {
+        "question": "Can I use CareerBoost Pro for free?",
+        "answer": "Yes. The Free plan includes resume creation with basic templates, a limited number of AI analyses per month, and access to the job marketplace. You only pay when you need premium templates, unlimited AI analyses, or HR expert sessions."
+      },
+      "q3": {
+        "question": "How accurate is the AI resume analysis?",
+        "answer": "Our AI evaluates your resume against real ATS criteria — structure, grammar, impact, keyword match, and overall readability. Each analysis returns a score (0–100), specific suggestions, and skills to develop. Based on user data, the average score improvement after applying suggestions is over 25 points."
+      },
+      "q4": {
+        "question": "Are the HR experts on the platform really verified?",
+        "answer": "Yes. Every HR expert goes through a manual admin verification process before getting the verified badge. We check their experience, specialization, and identity. You will only see green-check verified experts when booking a session."
+      },
+      "q5": {
+        "question": "In which formats can I download my resume?",
+        "answer": "Free users can download resumes in PDF format with no watermarks. Pro and Business users additionally get Word (.doc) export, premium templates, and the ability to download an unlimited number of versions."
+      },
+      "q6": {
+        "question": "Can I cancel my subscription and get a refund?",
+        "answer": "You can cancel anytime from Settings — you keep access until the end of the billing period. We also offer a 7-day money-back guarantee on all paid plans, no questions asked. Just contact support and we'll process the refund."
+      }
+    },
+    "stillHaveQuestions": "Still have questions?",
+    "contactUs": "Read the blog or contact us"
   },
   "cta": {
     "title": "Ready to Accelerate Your Career?",
